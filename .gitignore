@@ -1,0 +1,9 @@
+# env files/folders
+.venv/
+.env
+
+# cache folders
+cache/
+
+# data store
+.DS_Store
