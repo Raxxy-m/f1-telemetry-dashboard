@@ -1,23 +1,179 @@
+/* ===============================
+   ROOT THEME TOKENS
+================================ */
+:root {
+    --bg-main: #0e1116;
+    --bg-card: #141922;
+    --bg-dropdown: #0f141c;
+    --border: #1f2632;
+    --font-primary: #e6edf3;
+    --font-muted: #9aa4b2;
+    --accent-red: #FF1801;
+}
+
+/* ===============================
+   GLOBAL
+================================ */
+body {
+    background-color: var(--bg-main);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--font-primary);
+    margin: 0;
+}
+
+/* ===============================
+   LAYOUT
+================================ */
+.main_container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 40px 60px 40px;
+}
+
+.control-bar {
+    background: var(--bg-card);
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+}
+
+.section-card {
+    background: var(--bg-card);
+    padding: 24px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border);
+}
+
+/* ===============================
+   TITLES
+================================ */
+.dashboard-title {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--font-primary);
+    margin-bottom: 30px;
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+    color: var(--font-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ===============================
+   DASH DROPDOWN
+================================ */
+
+/* Control box */
 .Select-control {
-    background-color: var(--graph-bg) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
+    background-color: var(--bg-dropdown) !important;
     border-radius: 12px !important;
+    border: 1px solid var(--border) !important;
+    color: var(--font-primary) !important;
+    box-shadow: none !important;
     height: 42px !important;
 }
 
+/* Remove blue focus ring */
+.Select-control:focus,
+.is-focused .Select-control {
+    border: 1px solid #2c3442 !important;
+    box-shadow: none !important;
+}
+
+/* Remove blue background on selected value */
+.Select-placeholder,
+.Select-value {
+    background-color: transparent !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Text inside dropdown */
 .Select-value-label {
-    color: var(--font-color) !important;
+    color: var(--font-primary) !important;
 }
 
+/* Dropdown menu */
 .Select-menu-outer {
-    background-color: #0f1419 !important;
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
     border-radius: 12px !important;
+    z-index: 9999 !important;
 }
 
+/* Options */
 .Select-option {
-    background-color: #0f1419 !important;
+    background-color: var(--bg-card) !important;
+    color: var(--font-primary) !important;
 }
 
+/* Hover */
 .Select-option.is-focused {
-    background-color: rgba(255, 24, 1, 0.15) !important;
+    background-color: #1b222c !important;
+}
+
+/* Selected option */
+.Select-option.is-selected {
+    background-color: var(--accent-red) !important;
+    color: black !important;
+}
+
+/* Remove active click flash */
+.Select-option:active {
+    background-color: #1b222c !important;
+}
+
+/* Multi-select pills */
+.Select--multi .Select-value {
+    background-color: #1b222c !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    padding: 2px 6px !important;
+}
+
+/* Remove blue input outline */
+.Select-input > input {
+    outline: none !important;
+}
+
+/* Dropdown arrow */
+.Select-arrow {
+    border-color: var(--font-primary) transparent transparent !important;
+}
+
+/* ===============================
+   PLOTLY
+================================ */
+.js-plotly-plot {
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* ===============================
+   TABLE
+================================ */
+table {
+    color: var(--font-primary);
+}
+
+.fastest-lap-note {
+    font-size: 0.85rem;
+    color: var(--font-muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.4px;
+}
+
+/* ===============================
+   MINI TRACK MAP
+================================ */
+#mini-track-map {
+    margin-top: 120px;
 }
