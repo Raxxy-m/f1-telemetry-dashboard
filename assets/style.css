@@ -177,3 +177,54 @@ table {
 #mini-track-map {
     margin-top: 120px;
 }
+
+/* =========================
+   TABS STYLING
+========================= */
+
+.custom-tabs-container {
+    background-color: transparent !important;
+    border: none !important;
+    margin-bottom: 30px !important;
+}
+
+.custom-tabs {
+    border: none !important;
+}
+
+.custom-tab {
+    background-color: #141922 !important;
+    color: #9aa4b2 !important;
+    padding: 12px 20px !important;
+    border-radius: 8px 8px 0 0 !important;
+    margin-right: 6px !important;
+    border: 1px solid #1f2632 !important;
+    border-bottom: none !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.custom-tab:hover {
+    color: #e6edf3 !important;
+}
+
+.custom-tab--selected {
+    background-color: #0e1116 !important;
+    color: #e6edf3 !important;
+    font-weight: 500 !important;
+    border-bottom: 2px solid #FF1801 !important;
+}
+/* =========================
+   SLIDER STYLING
+========================= */
+.rc-slider-track {
+    background-color: #FF1801 !important;
+}
+
+.rc-slider-handle {
+    border: 2px solid #FF1801 !important;
+    background-color: #141922 !important;
+}
+
+.rc-slider-rail {
+    background-color: #1f2632 !important;
+}

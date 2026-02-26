@@ -34,3 +34,22 @@ GRAPH_LAYOUT = dict(
     plot_bgcolor=Theme.GRAPH_BG,
     font=dict(color=Theme.FONT_COLOR),
 )
+
+
+# Define the hover layout here
+
+def apply_standard_hover_layout(fig):
+    fig.update_layout(
+        hovermode="x unified",
+        hoverlabel=dict(
+            bgcolor="#141922",        
+            bordercolor="#1f2632",    
+            font=dict(
+                family="Inter, sans-serif",
+                size=12,
+                color="#e6edf3"       
+            )
+        )
+    )
+    
+    return fig

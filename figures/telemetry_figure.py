@@ -1,7 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from theme import GRAPH_LAYOUT, Theme
+from theme import GRAPH_LAYOUT, Theme, apply_standard_hover_layout
 
 from fastf1.plotting import get_driver_style
 
@@ -99,9 +99,10 @@ def build_telemetry_figure(driver_tel_dict, session):
             row=5, col=1
         )
 
+    fig = apply_standard_hover_layout(fig)
+
     fig.update_layout(
         height=850,
-        hovermode="x unified",
         legend=dict(
             bgcolor="rgba(0,0,0,0)",
             orientation="h",

@@ -1,6 +1,7 @@
 # callbacks.py
 
 from dash import Input, Output, State, html
+from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 import traceback
@@ -8,17 +9,19 @@ import pandas as pd
 
 from services.telemetry_service import get_fastest_laps, prepare_telemetry, compute_binary_delta
 from services.style_service import extract_driver_styles
+from services.session_telemetry_services import prepare_session_laps, safe_lap_selection, get_lap_telemetry, get_lap_time_evolution_data
 from figures.telemetry_figure import build_telemetry_figure
 from figures.track_figure import build_single_driver_track, build_binary_delta_track, build_multi_driver_message
 from figures.mini_track_figure import build_mini_track
+from figures.session_telemetry_figure import create_full_session_speed_figure
+from figures.lap_time_evolution_figure import create_lap_time_evolution_figure
+
+from layout import performance_comparison_layout, session_analysis_layout
 
 
 from fastf1 import get_event_schedule, get_event
 
-from data_engine import (
-    load_session,
-    fastest_lap_table,
-)
+from data_engine import load_session, fastest_lap_table
 
 def register_callbacks(app):
 
@@ -42,7 +45,7 @@ def register_callbacks(app):
 
 
     # ==========================================================
-    # Populate Session Dropdown (Sprint-safe)
+    # Populate Session Dropdown
     # ==========================================================
     @app.callback(
         Output("session-dd", "options"),
@@ -115,11 +118,10 @@ def register_callbacks(app):
             }
             for d in session.drivers
         ]
-
-
-    # ==========================================================
-    # Main Dashboard Update
-    # ==========================================================
+    
+# ==========================================================
+# PERFORMANCE COMPARISON DASHBOARD UPDATE
+# ==========================================================
     @app.callback(
         Output("telemetry-graph", "figure"),
         Output("track-delta", "figure"),
@@ -130,9 +132,13 @@ def register_callbacks(app):
         Input("year-dd", "value"),
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
-        Input("drivers-dd", "value")
+        Input("drivers-dd", "value"),
+        Input("view-tabs", "value")
     )
-    def update_dashboard(year, gp, session_type, drivers):
+    def update_dashboard(year, gp, session_type, drivers, active_tab):
+
+        if active_tab != "performance-comparison-tab":
+            raise PreventUpdate
 
         debug_lines = []
 
@@ -267,9 +273,9 @@ def register_callbacks(app):
                 {}
             )
         
-    # ==========================================================
-    # Mini Map Update
-    # ==========================================================
+# ==========================================================
+# MINI MAP UPDATE
+# ==========================================================
         
     @app.callback(
         Output("mini-track-map", "figure"),
@@ -298,3 +304,148 @@ def register_callbacks(app):
             driver_styles=driver_styles,
             reference_distance=reference_distance
         )
+    
+# ==========================================================
+# TAB SELECTION UPDATES
+# ==========================================================
+    @app.callback(
+        Output("tab-content", "children"),
+        Input("view-tabs", "value")
+    )
+    def render_tab(tab):
+
+        if tab == "performance-comparison-tab":
+            return performance_comparison_layout()
+        
+        elif tab == "session-analysis-tab":
+            return session_analysis_layout()
+        
+# ==========================================================
+# SESSION ANALYSIS DASHBOARD UPDATE
+# ==========================================================
+        
+    # ==========================================================
+    # LAP SLIDER UPDATE
+    # ==========================================================
+    @app.callback(
+        Output("lap-slider", "max"),
+        Output("lap-slider", "value"),
+        Input("year-dd", "value"),
+        Input("gp-dd", "value"),
+        Input("session-dd", "value"),
+        Input("drivers-dd", "value"),
+        Input("view-tabs", "value"),
+        prevent_initial_call=True
+    )
+
+    def update_lap_slider(year, gp, session_name, drivers, active_tab):
+        if active_tab != "session-analysis-tab":
+            raise PreventUpdate
+
+        if not all([year, gp, session_name, drivers]):
+            raise PreventUpdate
+
+        # Ensure exactly one driver selected
+        if not isinstance(drivers, list) or len(drivers) != 1:
+            raise PreventUpdate
+
+        driver = drivers[0]
+
+        session = load_session(year, gp, session_name)
+
+        laps = prepare_session_laps(
+            session=session,
+            driver_code=driver,
+            valid_only=True
+        )
+
+        if laps.empty:
+            return 1, 1
+
+        max_lap = int(laps["LapNumber"].max())
+
+        return max_lap, 1
+    
+    # ==========================================================
+    # TElEMETRY GRAPH
+    # ==========================================================
+    @app.callback(
+        Output("full-session-telemetry-graph", "figure"),
+        Input("lap-slider", "value"),
+        Input("year-dd", "value"),
+        Input("gp-dd", "value"),
+        Input("session-dd", "value"),
+        Input("drivers-dd", "value"),
+        Input("view-tabs", "value"),
+        prevent_initial_call=True
+    )
+    
+    def update_full_session_graph(lap_number, year, gp, session_name, drivers, active_tab):
+        if active_tab != "session-analysis-tab":
+            raise PreventUpdate
+
+        if not all([lap_number, year, gp, session_name, drivers]):
+            raise PreventUpdate
+
+        if not isinstance(drivers, list) or len(drivers) != 1:
+            raise PreventUpdate
+
+        driver = drivers[0]
+
+        session = load_session(year, gp, session_name)
+
+        laps = prepare_session_laps(
+            session=session,
+            driver_code=driver,
+            valid_only=True
+        )
+
+        if laps.empty:
+            raise PreventUpdate
+
+        lap = safe_lap_selection(laps, lap_number)
+
+        telemetry = get_lap_telemetry(lap)
+
+        return create_full_session_speed_figure(
+            telemetry=telemetry,
+            driver=driver,
+            lap_number=lap_number
+        )
+    
+    # ==========================================================
+    # LAP TIME EVOLUTION GRAPH
+    # ==========================================================
+    @app.callback(
+        Output("lap-time-evolution-graph", "figure"),
+        Input("year-dd", "value"),
+        Input("gp-dd", "value"),
+        Input("session-dd", "value"),
+        Input("drivers-dd", "value"),
+        Input("view-tabs", "value"),
+        prevent_initial_call=True
+    )
+
+    def update_lap_time_evolution(year, gp, session_name, drivers, active_tab):
+
+        if active_tab != "session-analysis-tab":
+            raise PreventUpdate
+
+        if not all([year, gp, session_name, drivers]):
+            raise PreventUpdate
+
+        if not isinstance(drivers, list) or len(drivers) != 1:
+            raise PreventUpdate
+
+        driver = drivers[0]
+
+        session = load_session(year, gp, session_name)
+
+        laps = session.laps.pick_drivers(driver)
+
+        if laps.empty:
+            raise PreventUpdate
+
+        df, fastest_idx = get_lap_time_evolution_data(laps)
+
+        return create_lap_time_evolution_figure(df, fastest_idx, driver, session)

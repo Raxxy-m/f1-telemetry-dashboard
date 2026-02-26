@@ -136,8 +136,7 @@ def build_multi_driver_message():
     fig = go.Figure()
 
     fig.update_layout(
-        paper_bgcolor="#0b0d0f",
-        plot_bgcolor="#0f1318",
+        **GRAPH_LAYOUT,
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         annotations=[
