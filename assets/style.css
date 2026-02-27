@@ -2,68 +2,91 @@
    ROOT THEME TOKENS
 ================================ */
 :root {
+    /* Backgrounds */
     --bg-main: #0e1116;
     --bg-card: #141922;
     --bg-dropdown: #0f141c;
+    --bg-hover: #1b222c;
+
+    /* Borders */
     --border: #1f2632;
+
+    /* Text */
     --font-primary: #e6edf3;
     --font-muted: #9aa4b2;
+
+    /* Accent */
     --accent-red: #FF1801;
+    --accent-red-dark: #cc1400;
 }
 
 /* ===============================
    GLOBAL
 ================================ */
 body {
-    background-color: var(--bg-main);
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-    color: var(--font-primary);
-    margin: 0;
+    background-color: var(--bg-main) !important;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--font-primary) !important;
+    margin: 0 !important;
 }
 
 /* ===============================
    LAYOUT
 ================================ */
 .main_container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 40px 60px 40px;
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+    padding: 40px 40px 60px 40px !important;
 }
 
 .control-bar {
-    background: var(--bg-card);
-    padding: 14px 18px;
-    border-radius: 12px;
-    margin-bottom: 28px;
-    border: 1px solid var(--border);
+    background: var(--bg-card) !important;
+    padding: 14px 18px !important;
+    border-radius: 12px !important;
+    margin-bottom: 28px !important;
+    border: 1px solid var(--border) !important;
 }
 
 .section-card {
-    background: var(--bg-card);
-    padding: 24px;
-    border-radius: 16px;
-    margin-bottom: 30px;
-    border: 1px solid var(--border);
+    background: var(--bg-card) !important;
+    padding: 24px !important;
+    border-radius: 16px !important;
+    margin-bottom: 30px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 0 0 1px var(--border) !important;
+    transition: transform 0.15s ease !important;
 }
 
+.section-card:hover {
+    transform: translate(-2px) !important;
+}
+
+.section-title::after {
+    content: "" !important;
+    display: block !important;
+    width: 40px !important;
+    height: 2px !important;
+    background: var(--accent-red) !important;
+    margin-top: 6px !important;
+}
 /* ===============================
    TITLES
 ================================ */
 .dashboard-title {
-    font-size: 2rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: var(--font-primary);
-    margin-bottom: 30px;
+    font-size: 2rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important; 
+    color: var(--font-primary) !important;
+    margin-bottom: 30px !important;
 }
 
 .section-title {
-    font-size: 1rem;
-    font-weight: 500;
-    margin-bottom: 16px;
-    color: var(--font-muted);
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    margin-bottom: 16px !important;
+    color: var(--font-muted) !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
 }
 
 /* ===============================
@@ -83,7 +106,7 @@ body {
 /* Remove blue focus ring */
 .Select-control:focus,
 .is-focused .Select-control {
-    border: 1px solid #2c3442 !important;
+    border: 1px solid var(--border) !important;
     box-shadow: none !important;
 }
 
@@ -117,7 +140,7 @@ body {
 
 /* Hover */
 .Select-option.is-focused {
-    background-color: #1b222c !important;
+    background-color: var(--bg-hover) !important;
 }
 
 /* Selected option */
@@ -128,12 +151,12 @@ body {
 
 /* Remove active click flash */
 .Select-option:active {
-    background-color: #1b222c !important;
+    background-color: var(--bg-hover) !important;
 }
 
 /* Multi-select pills */
 .Select--multi .Select-value {
-    background-color: #1b222c !important;
+    background-color: var(--bg-hover) !important;
     border: 1px solid var(--border) !important;
     border-radius: 8px !important;
     padding: 2px 6px !important;
@@ -153,27 +176,78 @@ body {
    PLOTLY
 ================================ */
 .js-plotly-plot {
-    border-radius: 14px;
-    overflow: hidden;
+    border-radius: 14px !important;
+    overflow: hidden !important;
 }
 
 /* ===============================
    TABLE
 ================================ */
 table {
-    color: var(--font-primary);
+    color: var(--font-primary) !important;
 }
 
 .fastest-lap-note {
-    font-size: 0.85rem;
-    color: var(--font-muted);
-    margin-bottom: 10px;
-    letter-spacing: 0.4px;
+    font-size: 0.85rem !important;
+    color: var(--font-muted) !important;
+    margin-bottom: 10px !important;
+    letter-spacing: 0.4px !important;
 }
 
 /* ===============================
    MINI TRACK MAP
 ================================ */
 #mini-track-map {
-    margin-top: 120px;
+    margin-top: 120px !important;
+}
+
+/* =========================
+   TABS STYLING
+========================= */
+
+.custom-tabs-container {
+    background-color: transparent !important;
+    border: none !important;
+    margin-bottom: 30px !important;
+}
+
+.custom-tabs {
+    border: none !important;
+}
+
+.custom-tab {
+    background-color: var(--bg-card) !important;
+    color: var(--font-muted) !important;
+    padding: 12px 20px !important;
+    border-radius: 8px 8px 0 0 !important;
+    margin-right: 6px !important;
+    border: 1px solid var(--border) !important;
+    border-bottom: none !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.custom-tab:hover {
+    color: var(--accent-red) !important;
+}
+
+.custom-tab--selected {
+    background-color: var(--bg-main) !important;
+    color: var(--font-primary) !important;
+    font-weight: 500 !important;
+    border-bottom: 3px solid var(--accent-red) !important;
+}
+/* =========================
+   SLIDER STYLING
+========================= */
+.rc-slider-track {
+    background-color: var(--accent-red) !important;
+}
+
+.rc-slider-handle {
+    border: 2px solid var(--accent-red) !important;
+    background-color: var(--bg-card) !important;
+}
+
+.rc-slider-rail {
+    background-color: var(--border) !important;
 }

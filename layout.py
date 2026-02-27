@@ -1,6 +1,6 @@
 from dash import html, dcc, dash_table
 from datetime import datetime
-from theme import CARD_STYLE, Theme
+from theme import CARD_STYLE, COLORS
 
 
 def create_layout():
@@ -27,7 +27,7 @@ def create_layout():
             ),
 
             # =========================
-            # INPUTS (Original IDs)
+            # INPUTS
             # =========================
             html.Div(
                 [
@@ -50,6 +50,63 @@ def create_layout():
             ),
 
             # =========================
+            # TABS
+            # =========================
+
+            dcc.Tabs(
+                id="view-tabs",
+                value="performance-comparison-tab",
+                parent_className="custom-tabs",
+                className="custom-tabs-container",
+                children=[
+                    dcc.Tab(
+                        label="Performance Comparison",
+                        value="performance-comparison-tab",
+                        className="custom-tab",
+                        selected_className="custom-tab--selected"
+                    ),
+                    dcc.Tab(
+                        label="Session Analysis",
+                        value="session-analysis-tab",
+                        className="custom-tab",
+                        selected_className="custom-tab--selected"
+                    ),
+                ],
+                style={"marginBottom": "30px"},
+            ),
+
+            # =========================
+            # TAB CONTENT
+            # =========================
+            html.Div([
+                html.Div(
+                    performance_comparison_layout(),
+                    id="performance-tab-content"
+                ),
+                html.Div(
+                    session_analysis_layout(),
+                    id="session-tab-content",
+                    style={"display": "none"}
+                )
+            ]),
+
+            # =========================
+            # DEBUG + STORE
+            # =========================
+            html.Div(id="debug-output"),
+            dcc.Store(id="telemetry-store"),
+        ],
+        style={"padding": "40px"},
+    )
+
+# =========================================================
+# TAB 1 — PERFORMANCE COMPARISON
+# =========================================================
+
+def performance_comparison_layout():
+    return html.Div(
+        [
+            # =========================
             # TELEMETRY SECTION
             # =========================
             html.Div(
@@ -57,7 +114,8 @@ def create_layout():
                     html.H4("TELEMETRY ANALYSIS",
                             style={"letterSpacing": "2px",
                                    "fontSize": "14px",
-                                   "marginBottom": "15px"}),
+                                   "marginBottom": "15px"}
+                            ),
 
                     html.Div(
                         [
@@ -79,7 +137,7 @@ def create_layout():
             html.Br(),
 
             # =========================
-            # TRACK DELTA (Original ID preserved)
+            # TRACK DELTA
             # =========================
             html.Div(
                 [
@@ -96,7 +154,7 @@ def create_layout():
             html.Br(),
 
             # =========================
-            # FASTEST LAP TABLE (Original ID preserved)
+            # FASTEST LAP TABLE
             # =========================
             html.Div(
                 [
@@ -108,13 +166,13 @@ def create_layout():
                     dash_table.DataTable(
                         id="fastest-lap-table",
                         style_header={
-                            "backgroundColor": Theme.GRAPH_BG,
-                            "color": Theme.FONT_COLOR,
+                            "backgroundColor": COLORS['bg_card'],
+                            "color": COLORS['text_muted'],
                             "border": "none",
                         },
                         style_cell={
                             "backgroundColor": "transparent",
-                            "color": Theme.FONT_COLOR,
+                            "color": COLORS['text_primary'],
                             "border": "none",
                             "padding": "10px",
                         },
@@ -123,17 +181,71 @@ def create_layout():
                 ],
                 style=CARD_STYLE,
             ),
+            html.Br(),
+        ]        
+    )
+
+# =========================================================
+# TAB 2 — SESSION ANALYSIS LAYOUT
+# =========================================================
+
+def session_analysis_layout():
+
+    return html.Div(
+        [
+
+            # =========================
+            # LAP SLIDER
+            # =========================
+            html.Div(
+                [
+                    html.H4(
+                        "FULL SESSION TELEMETRY",
+                        style={
+                            "letterSpacing": "2px",
+                            "fontSize": "14px",
+                            "marginBottom": "15px",
+                        },
+                    ),
+
+                    html.Label("Select Lap"),
+
+                    dcc.Slider(
+                        id="lap-slider",
+                        min=1,
+                        max=1,
+                        step=1,
+                        value=1,
+                        marks=None,
+                        tooltip={"placement": "bottom", "always_visible": False},
+                    ),
+                ],
+                style=CARD_STYLE,
+            ),
 
             html.Br(),
 
             # =========================
-            # DEBUG OUTPUT (Preserved)
+            # TELEMETRY GRAPH
             # =========================
-            html.Div(id="debug-output"),
+            html.Div(
+                [
+                    dcc.Graph(id="full-session-telemetry-graph"),
+                ],
+                style=CARD_STYLE,
+            ),
 
-            # Store (Preserved)
-            dcc.Store(id="telemetry-store"),
-
-        ],
-        style={"padding": "40px"},
+            html.Br(),
+            # =========================
+            # LAP TIME EVOLUTION GRAPH
+            # =========================
+            html.Div(
+                [
+                    dcc.Graph(id="lap-time-evolution-graph")
+                ],
+                style=CARD_STYLE
+            ),
+        ]
     )
+
+            

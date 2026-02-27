@@ -1,7 +1,10 @@
 import plotly.graph_objects as go
-from theme import GRAPH_LAYOUT, Theme
+from theme import COLORS, apply_standard_hover_layout
 
 def build_mini_track(driver_tel, driver_styles, reference_distance):
+    """
+    TODO: Add comments
+    """
 
     fig = go.Figure()
 
@@ -36,6 +39,8 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
                 name=driver_styles[first_driver]["label"]
             )
         )
+    
+    fig = apply_standard_hover_layout(fig)
 
     fig.update_layout(
         title={
@@ -46,12 +51,7 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
         showlegend=False,
         margin=dict(l=10, r=10, t=40, b=10),
         xaxis=dict(visible=False),
-        yaxis=dict(visible=False),
+        yaxis=dict(visible=False, scaleanchor="x", scaleratio=1, gridcolor=COLORS['grid']),
     )
-    
-    fig.update_layout(**GRAPH_LAYOUT)
-
-
-    fig.update_yaxes(scaleanchor="x", scaleratio=1, gridcolor=Theme.GRID_COLOR)
 
     return fig

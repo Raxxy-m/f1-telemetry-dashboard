@@ -3,7 +3,7 @@ import dash
 import dash_bootstrap_components as dbc
 
 from layout import create_layout
-from theme import Theme
+from theme import COLORS
 from callbacks import register_callbacks
 
 
@@ -22,14 +22,14 @@ app.index_string = f"""
         {{%css%}}
         <style>
             :root {{
-                --app-bg: {Theme.APP_BG};
-                --graph-bg: {Theme.GRAPH_BG};
-                --accent: {Theme.ACCENT_PRIMARY};
-                --font-color: {Theme.FONT_COLOR};
+                --app-bg: {COLORS['bg_main']};
+                --graph-bg: {COLORS['bg_card']};
+                --accent: {COLORS['accent_red']};
+                --font-color: {COLORS['text_primary']};
             }}
             body {{
-                background-color: {Theme.APP_BG};
-                color: {Theme.FONT_COLOR};
+                background-color: {COLORS['bg_main']};
+                color: {COLORS['text_primary']};
                 margin: 0;
                 font-family: 'Inter', sans-serif;
             }}

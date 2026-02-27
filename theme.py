@@ -1,36 +1,86 @@
 # theme.py
-import os
-from dotenv import load_dotenv
+import plotly.graph_objects as go
+import plotly.io as pio
 
-load_dotenv()
+# ==========================================================
+# SHARED COLOR SYSTEM
+# ==========================================================
 
-class Theme:
-    APP_BG = os.getenv("APP_BG")
-    CARD_BG = os.getenv("CARD_BG")
-    GRAPH_BG = os.getenv("GRAPH_BG")
-    GRID_COLOR = os.getenv("GRID_COLOR")
+COLORS = {
+    # Backgrounds
+    "bg_main": "#0e1116",
+    "bg_card": "#141922",
+    "bg_dropdown": "#0f141c",
+    "bg_hover": "#1b222c",
 
-    ACCENT_PRIMARY = os.getenv("ACCENT_PRIMARY")
-    ACCENT_BLUE = os.getenv("ACCENT_BLUE")
-    ACCENT_GREEN = os.getenv("ACCENT_GREEN")
+    # Borders / Grid
+    "border": "#1f2632",
+    "grid": "#1f2632",
 
-    FONT_COLOR = os.getenv("FONT_COLOR")
-    USE_GLASSMORPHISM = os.getenv("USE_GLASSMORPHISM") == "True"
+    # Text
+    "text_primary": "#e6edf3",
+    "text_muted": "#9aa4b2",
 
+    # Accent
+    "accent_red": "#FF1801",
+
+    # Fastest Lap Marker
+    "fl_marker": "#FFFFFF"
+}
+
+# ==========================================================
+# DASH CARD STYLE
+# ==========================================================
 
 CARD_STYLE = {
-    "background": Theme.CARD_BG,
-    "border": "1px solid rgba(255,255,255,0.05)",
+    "background": COLORS["bg_card"],
+    "border": f"1px solid {COLORS['border']}",
     "borderRadius": "16px",
     "padding": "20px",
 }
 
-if Theme.USE_GLASSMORPHISM:
-    CARD_STYLE["backdropFilter"] = "blur(12px)"
+# ==========================================================
+# PLOTLY TEMPLATE
+# ==========================================================
 
-
-GRAPH_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor=Theme.GRAPH_BG,
-    font=dict(color=Theme.FONT_COLOR),
+F1_TEMPLATE = go.layout.Template(
+    layout=go.Layout(
+        paper_bgcolor=COLORS["bg_main"],
+        plot_bgcolor=COLORS["bg_card"],
+        font=dict(
+            family="Inter, sans-serif",
+            color=COLORS["text_primary"]
+        ),
+        xaxis=dict(
+            gridcolor=COLORS["grid"],
+            zerolinecolor=COLORS["grid"],
+        ),
+        yaxis=dict(
+            gridcolor=COLORS["grid"],
+            zerolinecolor=COLORS["grid"],
+        ),
+        hoverlabel=dict(
+            bgcolor=COLORS["bg_card"],
+            bordercolor=COLORS["accent_red"],
+            font=dict(color=COLORS["text_primary"])
+        ),
+        # colorway=[
+        #     COLORS["accent_red"],
+        #     "#00D2BE",
+        #     "#005AFF",
+        #     "#DC0000",
+        #     "#FF8700",
+        # ],
+    )
 )
+
+pio.templates['f1_dark'] = F1_TEMPLATE
+pio.templates.default = 'f1_dark'
+
+# ==========================================================
+# HOVER STANDARDIZATION
+# ==========================================================
+
+def apply_standard_hover_layout(fig):
+    fig.update_layout(hovermode="x unified")
+    return fig
