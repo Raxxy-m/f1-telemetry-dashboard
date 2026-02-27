@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 from fastf1.plotting import get_driver_style
 
-from theme import GRAPH_LAYOUT, Theme
+from theme import COLORS
 
 def adjust_color_brightness(hex_color, factor=0.8):
     hex_color = hex_color.lstrip("#")
@@ -33,8 +33,6 @@ def build_single_driver_track(tel):
         yaxis=dict(visible=False, scaleanchor="x", scaleratio=1),
         margin=dict(l=10, r=10, t=40, b=10),
     )
-
-    fig.update_layout(**GRAPH_LAYOUT)
 
     return fig
 
@@ -127,8 +125,6 @@ def build_binary_delta_track(delta_tel, driver1, driver2, faster_index, session)
         margin=dict(l=10, r=10, t=50, b=10),
     )
 
-    fig.update_layout(**GRAPH_LAYOUT)
-
     return fig
 
 
@@ -136,7 +132,6 @@ def build_multi_driver_message():
     fig = go.Figure()
 
     fig.update_layout(
-        **GRAPH_LAYOUT,
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         annotations=[
@@ -148,7 +143,7 @@ def build_multi_driver_message():
                 xref="paper",
                 yref="paper",
                 showarrow=False,
-                font=dict(color="#aaaaaa", size=16)
+                font=dict(color=COLORS['text_muted'], size=16)
             )
         ],
         margin=dict(l=10, r=10, t=10, b=10),

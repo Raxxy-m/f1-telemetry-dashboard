@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 from fastf1.plotting import get_compound_color
 
-from theme import GRAPH_LAYOUT, Theme, apply_standard_hover_layout
+from theme import COLORS, apply_standard_hover_layout
 
 def create_lap_time_evolution_figure(df, fastest_idx, driver, session):
     """
@@ -47,7 +47,7 @@ def create_lap_time_evolution_figure(df, fastest_idx, driver, session):
                 y=[fastest_lap["LapTimeSeconds"]],
                 mode="markers+text",
                 marker=dict(
-                    color="#FFFFFF",
+                    color=COLORS['fl_marker'],
                     size=12,
                     symbol="circle-dot"
                 ),
@@ -67,7 +67,6 @@ def create_lap_time_evolution_figure(df, fastest_idx, driver, session):
             yaxis_title="Lap Time",
             margin=dict(l=40, r=40, t=60, b=40),
         )
-        fig.update_layout(**GRAPH_LAYOUT)
 
         # Format y-axis as mm:ss.SSS
         fig.update_yaxes(

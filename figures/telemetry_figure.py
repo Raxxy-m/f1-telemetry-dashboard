@@ -1,7 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from theme import GRAPH_LAYOUT, Theme, apply_standard_hover_layout
+from theme import COLORS, apply_standard_hover_layout
 
 from fastf1.plotting import get_driver_style
 
@@ -110,16 +110,14 @@ def build_telemetry_figure(driver_tel_dict, session):
         )
     )
 
-    fig.update_layout(**GRAPH_LAYOUT)
-
     fig.update_yaxes(title_text="Speed",range=[0, None], row=1, col=1)
     fig.update_yaxes(title_text="Throttle",range=[0, 100], row=2, col=1)
     fig.update_yaxes(title_text="RPM",range=[0, None], row=3, col=1)
     fig.update_yaxes(title_text="Brake",range=[0, 100], row=4, col=1)
     fig.update_yaxes(title_text="Gear",dtick=1, row=5, col=1)
 
-    fig.update_yaxes(gridcolor=Theme.GRID_COLOR)
-    fig.update_xaxes(gridcolor=Theme.GRID_COLOR)
+    fig.update_yaxes(gridcolor=COLORS['grid'])
+    fig.update_xaxes(gridcolor=COLORS['grid'])
 
     fig.update_yaxes(showgrid=False, row=2, col=1)
     fig.update_yaxes(showgrid=False, row=3, col=1)

@@ -16,8 +16,6 @@ from figures.mini_track_figure import build_mini_track
 from figures.session_telemetry_figure import create_full_session_speed_figure
 from figures.lap_time_evolution_figure import create_lap_time_evolution_figure
 
-from layout import performance_comparison_layout, session_analysis_layout
-
 
 from fastf1 import get_event_schedule, get_event
 
@@ -133,7 +131,8 @@ def register_callbacks(app):
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
         Input("drivers-dd", "value"),
-        Input("view-tabs", "value")
+        Input("view-tabs", "value"),
+        prevent_initial_call=True
     )
     def update_dashboard(year, gp, session_type, drivers, active_tab):
 
@@ -280,9 +279,14 @@ def register_callbacks(app):
     @app.callback(
         Output("mini-track-map", "figure"),
         Input("telemetry-graph", "hoverData"),
+        Input("view-tabs", "value"),
         State("telemetry-store", "data"),
     )
-    def update_mini_map(hoverData, stored_data):
+    def update_mini_map(hoverData, active_tab, stored_data):
+
+        if active_tab != "performance-comparison-tab":
+            raise PreventUpdate
+        
         if not stored_data:
             return go.Figure()
 
@@ -309,16 +313,15 @@ def register_callbacks(app):
 # TAB SELECTION UPDATES
 # ==========================================================
     @app.callback(
-        Output("tab-content", "children"),
+        Output("performance-tab-content", "style"),
+        Output("session-tab-content", "style"),
         Input("view-tabs", "value")
     )
-    def render_tab(tab):
-
+    def toggle_tabs(tab):
         if tab == "performance-comparison-tab":
-            return performance_comparison_layout()
-        
-        elif tab == "session-analysis-tab":
-            return session_analysis_layout()
+            return {"display": "block"}, {"display": "none"}
+        else:
+            return {"display": "none"}, {"display": "block"}
         
 # ==========================================================
 # SESSION ANALYSIS DASHBOARD UPDATE

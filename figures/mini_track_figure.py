@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from theme import GRAPH_LAYOUT, Theme, apply_standard_hover_layout
+from theme import COLORS, apply_standard_hover_layout
 
 def build_mini_track(driver_tel, driver_styles, reference_distance):
     """
@@ -51,9 +51,7 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
         showlegend=False,
         margin=dict(l=10, r=10, t=40, b=10),
         xaxis=dict(visible=False),
-        yaxis=dict(visible=False, scaleanchor="x", scaleratio=1, gridcolor=Theme.GRID_COLOR),
+        yaxis=dict(visible=False, scaleanchor="x", scaleratio=1, gridcolor=COLORS['grid']),
     )
-    
-    fig.update_layout(**GRAPH_LAYOUT)
 
     return fig

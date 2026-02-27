@@ -1,6 +1,6 @@
 from dash import html, dcc, dash_table
 from datetime import datetime
-from theme import CARD_STYLE, Theme
+from theme import CARD_STYLE, COLORS
 
 
 def create_layout():
@@ -55,7 +55,7 @@ def create_layout():
 
             dcc.Tabs(
                 id="view-tabs",
-                value="comparison-tab",
+                value="performance-comparison-tab",
                 parent_className="custom-tabs",
                 className="custom-tabs-container",
                 children=[
@@ -78,7 +78,17 @@ def create_layout():
             # =========================
             # TAB CONTENT
             # =========================
-            html.Div(id="tab-content"),
+            html.Div([
+                html.Div(
+                    performance_comparison_layout(),
+                    id="performance-tab-content"
+                ),
+                html.Div(
+                    session_analysis_layout(),
+                    id="session-tab-content",
+                    style={"display": "none"}
+                )
+            ]),
 
             # =========================
             # DEBUG + STORE
@@ -156,13 +166,13 @@ def performance_comparison_layout():
                     dash_table.DataTable(
                         id="fastest-lap-table",
                         style_header={
-                            "backgroundColor": Theme.GRAPH_BG,
-                            "color": Theme.FONT_COLOR,
+                            "backgroundColor": COLORS['bg_card'],
+                            "color": COLORS['text_muted'],
                             "border": "none",
                         },
                         style_cell={
                             "backgroundColor": "transparent",
-                            "color": Theme.FONT_COLOR,
+                            "color": COLORS['text_primary'],
                             "border": "none",
                             "padding": "10px",
                         },
