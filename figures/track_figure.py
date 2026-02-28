@@ -78,9 +78,10 @@ def build_binary_delta_track(delta_tel, driver1, driver2, faster_index, session)
     for i in range(len(delta_tel) - 1):
 
         if delta_tel["Delta"].iloc[i] > 0:
-            segment_color = slower_color
-        else:
+            # Positive delta means comparator lap is slower than reference lap.
             segment_color = faster_color
+        else:
+            segment_color = slower_color
 
         fig.add_trace(
             go.Scatter(

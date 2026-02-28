@@ -1,4 +1,4 @@
-from dash import Input, Output, State, html
+from dash import Input, Output, State, html, ctx
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 import traceback
@@ -34,13 +34,33 @@ from figures.comparison_insights_figure import (
     build_speed_profile_figure,
 )
 
-from fastf1 import get_event_schedule, get_event
-
-from data_engine import load_session, fastest_lap_table
+from data_engine import load_session, fastest_lap_table, get_supported_event_schedule
 
 
 def _blank_fig():
     return go.Figure()
+
+
+def _message_figure(message, height=360):
+    fig = go.Figure()
+    fig.update_layout(
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        annotations=[
+            dict(
+                text=message,
+                x=0.5,
+                y=0.5,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(color="#93a1b5", size=14),
+            )
+        ],
+        margin=dict(l=16, r=16, t=16, b=16),
+        height=height,
+    )
+    return fig
 
 
 def _format_td(td):
@@ -155,74 +175,85 @@ def _build_kpi_cards(session, fastest_laps, driver_tel):
 def register_callbacks(app):
     @app.callback(
         Output("gp-dd", "options"),
+        Output("gp-dd", "value"),
         Input("year-dd", "value"),
+        State("gp-dd", "value"),
     )
-    def update_gp_dropdown(year):
+    def update_gp_dropdown(year, current_gp):
         if not year:
-            return []
+            return [], None
 
-        schedule = get_event_schedule(year)
-        return [
-            {"label": row["EventName"], "value": row["EventName"]}
-            for _, row in schedule.iterrows()
+        schedule = get_supported_event_schedule(year)
+        options = [
+            {
+                "label": (
+                    f"{row['EventName']} ({row['Location']})"
+                    if row["EventFormat"] == "testing"
+                    else row["EventName"]
+                ),
+                "value": int(idx),
+            }
+            for idx, row in schedule.iterrows()
         ]
+        # Always clear selected GP when year changes to avoid stale index mapping.
+        return options, None
 
     @app.callback(
         Output("session-dd", "options"),
+        Output("session-dd", "value"),
         Input("year-dd", "value"),
         Input("gp-dd", "value"),
+        State("session-dd", "value"),
     )
-    def update_sessions(year, gp):
-        if not all([year, gp]):
-            return []
+    def update_sessions(year, gp, current_session):
+        if year is None or gp is None:
+            return [], None
 
-        event = get_event(year, gp)
-        session_columns = [
-            col for col in event.index
-            if col.startswith("Session") and "Date" not in col
-        ]
+        schedule = get_supported_event_schedule(year)
+        gp_idx = int(gp)
+        if gp_idx < 0 or gp_idx >= len(schedule):
+            return [], None
 
+        event_row = schedule.iloc[gp_idx]
         options = []
-        mapping = {
-            "Practice 1": "FP1",
-            "Practice 2": "FP2",
-            "Practice 3": "FP3",
-            "Sprint Qualifying": "SQ",
-            "Sprint Shootout": "SS",
-            "Sprint": "S",
-            "Qualifying": "Q",
-            "Race": "R",
-        }
 
-        for col in session_columns:
-            session_name = event[col]
+        for idx in range(1, 6):
+            col = f"Session{idx}"
+            if col not in event_row.index:
+                continue
+            session_name = event_row[col]
             if pd.isna(session_name):
                 continue
-            for key in mapping:
-                if key in session_name:
-                    options.append({"label": session_name, "value": mapping[key]})
-                    break
+            options.append({"label": str(session_name), "value": idx})
 
-        return options
+        available = {opt["value"] for opt in options}
+        next_value = current_session if current_session in available else None
+        return options, next_value
 
     @app.callback(
         Output("drivers-dd", "options"),
+        Output("drivers-dd", "value"),
         Input("year-dd", "value"),
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
+        State("drivers-dd", "value"),
     )
-    def update_drivers(year, gp, session_type):
-        if not all([year, gp, session_type]):
-            return []
+    def update_drivers(year, gp, session_type, current_drivers):
+        if year is None or gp is None or session_type is None:
+            return [], []
 
-        session = load_session(year, gp, session_type)
-        return [
+        session = load_session(year, int(gp), int(session_type))
+        options = [
             {
                 "label": f"{session.get_driver(d)['Abbreviation']} ({d})",
                 "value": d,
             }
             for d in session.drivers
         ]
+        available = {opt["value"] for opt in options}
+        current_drivers = current_drivers or []
+        next_drivers = [drv for drv in current_drivers if drv in available]
+        return options, next_drivers
 
     @app.callback(
         Output("telemetry-graph", "figure"),
@@ -255,7 +286,7 @@ def register_callbacks(app):
             debug_lines.append(f"Drivers: {drivers}")
             debug_lines.append("")
 
-            if not all([year, gp, session_type, drivers]):
+            if year is None or gp is None or session_type is None or not drivers:
                 return (
                     _blank_fig(),
                     _build_kpi_cards(None, {}, {}),
@@ -269,7 +300,7 @@ def register_callbacks(app):
                     {},
                 )
 
-            session = load_session(year, gp, session_type)
+            session = load_session(year, int(gp), int(session_type))
 
             debug_lines.append("Session loaded successfully")
             debug_lines.append(f"Event: {session.event['EventName']}")
@@ -407,7 +438,8 @@ def register_callbacks(app):
 
     @app.callback(
         Output("lap-slider", "max"),
-        Output("lap-slider", "value"),
+        Output("lap-input", "max"),
+        Output("lap-max-label", "children"),
         Input("year-dd", "value"),
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
@@ -419,14 +451,14 @@ def register_callbacks(app):
         if active_tab != "session-analysis-tab":
             raise PreventUpdate
 
-        if not all([year, gp, session_name, drivers]):
+        if year is None or gp is None or session_name is None or not drivers:
             raise PreventUpdate
 
         if not isinstance(drivers, list) or len(drivers) != 1:
-            raise PreventUpdate
+            return 1, 1, "/ 1 laps"
 
         driver = drivers[0]
-        session = load_session(year, gp, session_name)
+        session = load_session(year, int(gp), int(session_name))
         laps = prepare_session_laps(
             session=session,
             driver_code=driver,
@@ -434,10 +466,68 @@ def register_callbacks(app):
         )
 
         if laps.empty:
-            return 1, 1
+            return 1, 1, "/ 1 laps"
 
         max_lap = int(laps["LapNumber"].max())
-        return max_lap, 1
+        return max_lap, max_lap, f"/ {max_lap} laps"
+
+    @app.callback(
+        Output("lap-slider", "value"),
+        Output("lap-input", "value"),
+        Input("lap-slider", "value"),
+        Input("lap-input", "value"),
+        Input("lap-prev-btn", "n_clicks"),
+        Input("lap-next-btn", "n_clicks"),
+        Input("lap-slider", "max"),
+        Input("year-dd", "value"),
+        Input("gp-dd", "value"),
+        Input("session-dd", "value"),
+        Input("drivers-dd", "value"),
+        Input("view-tabs", "value"),
+        prevent_initial_call=True,
+    )
+    def sync_lap_controls(
+        slider_value,
+        input_value,
+        prev_clicks,
+        next_clicks,
+        max_lap,
+        year,
+        gp,
+        session_name,
+        drivers,
+        active_tab,
+    ):
+        if active_tab != "session-analysis-tab":
+            raise PreventUpdate
+
+        max_lap = int(max_lap or 1)
+        trigger_prop = ctx.triggered[0]["prop_id"] if ctx.triggered else ""
+        trigger = ctx.triggered_id
+
+        current_value = int(slider_value or input_value or 1)
+
+        if trigger_prop in {
+            "year-dd.value",
+            "gp-dd.value",
+            "session-dd.value",
+            "drivers-dd.value",
+            "view-tabs.value",
+        }:
+            next_value = 1
+        elif trigger == "lap-prev-btn":
+            next_value = current_value - 1
+        elif trigger == "lap-next-btn":
+            next_value = current_value + 1
+        elif trigger == "lap-input":
+            next_value = int(input_value or current_value)
+        elif trigger_prop == "lap-slider.max":
+            next_value = current_value
+        else:
+            next_value = int(slider_value or current_value)
+
+        next_value = max(1, min(max_lap, next_value))
+        return next_value, next_value
 
     @app.callback(
         Output("full-session-telemetry-graph", "figure"),
@@ -462,14 +552,29 @@ def register_callbacks(app):
         if active_tab != "session-analysis-tab":
             raise PreventUpdate
 
-        if not all([lap_number, year, gp, session_name, drivers]):
+        if (
+            lap_number is None
+            or year is None
+            or gp is None
+            or session_name is None
+            or not drivers
+        ):
             raise PreventUpdate
 
         if not isinstance(drivers, list) or len(drivers) != 1:
-            raise PreventUpdate
+            return (
+                _message_figure("Select exactly 1 driver for lap drilldown telemetry.", height=760),
+                _message_figure("Select exactly 1 driver to compute lap delta to fastest.", height=360),
+                [
+                    html.Span(
+                        "Lap drilldown supports one driver at a time.",
+                        className="lap-context-item",
+                    )
+                ],
+            )
 
         driver = drivers[0]
-        session = load_session(year, gp, session_name)
+        session = load_session(year, int(gp), int(session_name))
         laps = prepare_session_laps(
             session=session,
             driver_code=driver,
@@ -538,18 +643,31 @@ def register_callbacks(app):
         if active_tab != "session-analysis-tab":
             raise PreventUpdate
 
-        if not all([year, gp, session_name, drivers]):
+        if year is None or gp is None or session_name is None or not drivers:
             raise PreventUpdate
 
-        if not isinstance(drivers, list) or len(drivers) != 1:
+        if not isinstance(drivers, list):
             raise PreventUpdate
 
-        driver = drivers[0]
-        session = load_session(year, gp, session_name)
-        laps = session.laps.pick_drivers(driver)
+        if len(drivers) > 2:
+            return _message_figure("Select up to 2 drivers for lap-time evolution comparison.", height=430)
 
-        if laps.empty:
+        session = load_session(year, int(gp), int(session_name))
+        payloads = []
+        for driver in drivers:
+            laps = session.laps.pick_drivers(driver)
+            if laps.empty:
+                continue
+            df, fastest_idx = get_lap_time_evolution_data(laps)
+            payloads.append(
+                {
+                    "driver": driver,
+                    "df": df,
+                    "fastest_idx": fastest_idx,
+                }
+            )
+
+        if not payloads:
             raise PreventUpdate
 
-        df, fastest_idx = get_lap_time_evolution_data(laps)
-        return create_lap_time_evolution_figure(df, fastest_idx, driver, session)
+        return create_lap_time_evolution_figure(payloads, session)

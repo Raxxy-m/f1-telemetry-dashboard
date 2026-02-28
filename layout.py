@@ -330,6 +330,23 @@ def session_analysis_layout():
                     html.Div(
                         [
                             html.Label("Select Lap", className="control-label"),
+                            html.Div(
+                                [
+                                    html.Button("Prev", id="lap-prev-btn", className="lap-nav-btn", n_clicks=0),
+                                    dcc.Input(
+                                        id="lap-input",
+                                        type="number",
+                                        min=1,
+                                        max=1,
+                                        step=1,
+                                        value=1,
+                                        className="lap-number-input",
+                                    ),
+                                    html.Span("/ 1 laps", id="lap-max-label", className="lap-max-label"),
+                                    html.Button("Next", id="lap-next-btn", className="lap-nav-btn", n_clicks=0),
+                                ],
+                                className="lap-stepper",
+                            ),
                             dcc.Slider(
                                 id="lap-slider",
                                 min=1,
