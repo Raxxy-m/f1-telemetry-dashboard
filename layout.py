@@ -1,10 +1,32 @@
-from dash import html, dcc, dash_table
 from datetime import datetime
-from theme import CARD_STYLE, COLORS
+
+from dash import dash_table, dcc, html
+
+from theme import COLORS
+
+
+def section_header(kicker, title, subtitle=None):
+    children = [
+        html.Div(kicker, className="section-kicker"),
+        html.H2(title, className="section-heading"),
+    ]
+    if subtitle:
+        children.append(html.P(subtitle, className="section-subtitle"))
+    return html.Div(children, className="section-header")
+
+
+def control_field(label, component, wide=False):
+    field_class = "control-field control-field--wide" if wide else "control-field"
+    return html.Div(
+        [
+            html.Label(label, className="control-label"),
+            component,
+        ],
+        className=field_class,
+    )
 
 
 def create_layout():
-
     current_year = datetime.now().year
 
     year_options = [
@@ -14,238 +36,252 @@ def create_layout():
 
     return html.Div(
         [
-
-            # =========================
-            # TITLE
-            # =========================
-            html.H1(
-                "F1 Telemetry Dashboard",
-                style={
-                    "marginBottom": "30px",
-                    "fontWeight": "600",
-                },
-            ),
-
-            # =========================
-            # INPUTS
-            # =========================
-            html.Div(
+            html.Header(
                 [
-                    dcc.Dropdown(
-                        id="year-dd",
-                        options=year_options,
-                        value=current_year,
-                        clearable=False,
+                    html.Div(
+                        [
+                            html.Div("F1 Telemetry Platform", className="app-badge"),
+                            html.H1("Race Engineering Dashboard", className="dashboard-title"),
+                            html.P(
+                                "High-density telemetry, delta analysis and session pace intelligence.",
+                                className="dashboard-subtitle",
+                            ),
+                            html.P(
+                                "Season, event and session filters update all visual layers in real time.",
+                                className="toolbar-meta",
+                            ),
+                        ],
+                        className="toolbar-left",
                     ),
-                    dcc.Dropdown(id="gp-dd"),
-                    dcc.Dropdown(id="session-dd"),
-                    dcc.Dropdown(id="drivers-dd", multi=True),
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    control_field(
+                                        "Season",
+                                        dcc.Dropdown(
+                                            id="year-dd",
+                                            options=year_options,
+                                            value=current_year,
+                                            clearable=False,
+                                            className="f1-dropdown",
+                                        ),
+                                    ),
+                                    control_field(
+                                        "Grand Prix",
+                                        dcc.Dropdown(id="gp-dd", className="f1-dropdown"),
+                                    ),
+                                    control_field(
+                                        "Session",
+                                        dcc.Dropdown(id="session-dd", className="f1-dropdown"),
+                                    ),
+                                    control_field(
+                                        "Drivers",
+                                        dcc.Dropdown(id="drivers-dd", multi=True, className="f1-dropdown"),
+                                        wide=True,
+                                    ),
+                                ],
+                                className="control-bar",
+                            ),
+                        ],
+                        className="toolbar-right",
+                    ),
                 ],
-                style={
-                    "display": "grid",
-                    "gridTemplateColumns": "1fr 1fr 1fr 2fr",
-                    "gap": "20px",
-                    "marginBottom": "40px",
-                },
+                className="dashboard-topbar",
             ),
-
-            # =========================
-            # TABS
-            # =========================
-
-            dcc.Tabs(
-                id="view-tabs",
-                value="performance-comparison-tab",
-                parent_className="custom-tabs",
-                className="custom-tabs-container",
-                children=[
-                    dcc.Tab(
-                        label="Performance Comparison",
+            html.Main(
+                [
+                    dcc.Tabs(
+                        id="view-tabs",
                         value="performance-comparison-tab",
-                        className="custom-tab",
-                        selected_className="custom-tab--selected"
+                        parent_className="custom-tabs",
+                        className="custom-tabs-container",
+                        children=[
+                            dcc.Tab(
+                                label="Performance Comparison",
+                                value="performance-comparison-tab",
+                                className="custom-tab",
+                                selected_className="custom-tab--selected",
+                            ),
+                            dcc.Tab(
+                                label="Session Analysis",
+                                value="session-analysis-tab",
+                                className="custom-tab",
+                                selected_className="custom-tab--selected",
+                            ),
+                        ],
                     ),
-                    dcc.Tab(
-                        label="Session Analysis",
-                        value="session-analysis-tab",
-                        className="custom-tab",
-                        selected_className="custom-tab--selected"
+                    html.Div(
+                        [
+                            html.Div(
+                                performance_comparison_layout(),
+                                id="performance-tab-content",
+                            ),
+                            html.Div(
+                                session_analysis_layout(),
+                                id="session-tab-content",
+                                style={"display": "none"},
+                            ),
+                        ],
+                        className="tab-body",
                     ),
+                    html.Pre(id="debug-output", className="debug-output"),
+                    dcc.Store(id="telemetry-store"),
                 ],
-                style={"marginBottom": "30px"},
+                className="dashboard-content",
             ),
-
-            # =========================
-            # TAB CONTENT
-            # =========================
-            html.Div([
-                html.Div(
-                    performance_comparison_layout(),
-                    id="performance-tab-content"
-                ),
-                html.Div(
-                    session_analysis_layout(),
-                    id="session-tab-content",
-                    style={"display": "none"}
-                )
-            ]),
-
-            # =========================
-            # DEBUG + STORE
-            # =========================
-            html.Div(id="debug-output"),
-            dcc.Store(id="telemetry-store"),
         ],
-        style={"padding": "40px"},
+        className="main_container",
     )
 
-# =========================================================
-# TAB 1 — PERFORMANCE COMPARISON
-# =========================================================
 
 def performance_comparison_layout():
     return html.Div(
         [
-            # =========================
-            # TELEMETRY SECTION
-            # =========================
             html.Div(
                 [
-                    html.H4("TELEMETRY ANALYSIS",
-                            style={"letterSpacing": "2px",
-                                   "fontSize": "14px",
-                                   "marginBottom": "15px"}
-                            ),
-
+                    section_header(
+                        "Telemetry",
+                        "Driver Overlay Analysis",
+                        "Compare speed, throttle, RPM, brake and gear with synchronized cursor tracking.",
+                    ),
                     html.Div(
                         [
                             html.Div(
-                                dcc.Graph(id="telemetry-graph"),
-                                style={"flex": "3"},
+                                dcc.Graph(
+                                    id="telemetry-graph",
+                                    className="chart-surface",
+                                    config={"displaylogo": False},
+                                ),
+                                className="telemetry-main",
                             ),
                             html.Div(
-                                dcc.Graph(id="mini-track-map"),
-                                style={"flex": "1"},
+                                dcc.Graph(
+                                    id="mini-track-map",
+                                    className="chart-surface mini-track-graph",
+                                    config={"displaylogo": False},
+                                ),
+                                className="telemetry-mini mini-track-companion",
                             ),
                         ],
-                        style={"display": "flex", "gap": "20px"},
+                        className="telemetry-grid",
                     ),
                 ],
-                style=CARD_STYLE,
+                className="section-card",
             ),
-
-            html.Br(),
-
-            # =========================
-            # TRACK DELTA
-            # =========================
             html.Div(
                 [
-                    html.H4("TRACK DELTA (FASTEST LAP)",
-                            style={"letterSpacing": "2px",
-                                   "fontSize": "14px",
-                                   "marginBottom": "15px"}),
-
-                    dcc.Graph(id="track-delta"),
+                    section_header(
+                        "Delta",
+                        "Track Segment Advantage",
+                        "Binary track map highlights who is ahead through each sector segment.",
+                    ),
+                    dcc.Graph(
+                        id="track-delta",
+                        className="chart-surface",
+                        config={"displaylogo": False},
+                    ),
                 ],
-                style=CARD_STYLE,
+                className="section-card",
             ),
-
-            html.Br(),
-
-            # =========================
-            # FASTEST LAP TABLE
-            # =========================
             html.Div(
                 [
-                    html.H4("FASTEST LAP SUMMARY",
-                            style={"letterSpacing": "2px",
-                                   "fontSize": "14px",
-                                   "marginBottom": "15px"}),
-
+                    section_header(
+                        "Summary",
+                        "Fastest Lap Table",
+                        "Compact benchmark table for selected drivers.",
+                    ),
                     dash_table.DataTable(
                         id="fastest-lap-table",
+                        fixed_rows={"headers": True},
+                        style_as_list_view=True,
                         style_header={
-                            "backgroundColor": COLORS['bg_card'],
-                            "color": COLORS['text_muted'],
+                            "backgroundColor": COLORS["surface_2"],
+                            "color": COLORS["text_secondary"],
                             "border": "none",
+                            "fontWeight": 600,
+                            "fontSize": "11px",
+                            "letterSpacing": "0.08em",
+                            "textTransform": "uppercase",
                         },
                         style_cell={
                             "backgroundColor": "transparent",
-                            "color": COLORS['text_primary'],
+                            "color": COLORS["text_primary"],
                             "border": "none",
-                            "padding": "10px",
+                            "padding": "8px 10px",
+                            "fontSize": "12px",
+                            "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                            "fontVariantNumeric": "tabular-nums",
+                            "textAlign": "left",
                         },
-                        style_table={"overflowX": "auto"},
+                        style_data_conditional=[
+                            {
+                                "if": {"column_type": "numeric"},
+                                "textAlign": "right",
+                            }
+                        ],
+                        style_table={
+                            "overflowX": "auto",
+                            "overflowY": "auto",
+                            "maxHeight": "320px",
+                        },
                     ),
                 ],
-                style=CARD_STYLE,
+                className="section-card",
             ),
-            html.Br(),
-        ]        
+        ],
+        className="performance-view",
     )
 
-# =========================================================
-# TAB 2 — SESSION ANALYSIS LAYOUT
-# =========================================================
 
 def session_analysis_layout():
-
     return html.Div(
         [
-
-            # =========================
-            # LAP SLIDER
-            # =========================
             html.Div(
                 [
-                    html.H4(
-                        "FULL SESSION TELEMETRY",
-                        style={
-                            "letterSpacing": "2px",
-                            "fontSize": "14px",
-                            "marginBottom": "15px",
-                        },
+                    section_header(
+                        "Session",
+                        "Lap Telemetry Drilldown",
+                        "Inspect one driver lap with distance-based speed trace.",
                     ),
-
-                    html.Label("Select Lap"),
-
-                    dcc.Slider(
-                        id="lap-slider",
-                        min=1,
-                        max=1,
-                        step=1,
-                        value=1,
-                        marks=None,
-                        tooltip={"placement": "bottom", "always_visible": False},
+                    html.Div(
+                        [
+                            html.Label("Select Lap", className="control-label"),
+                            dcc.Slider(
+                                id="lap-slider",
+                                min=1,
+                                max=1,
+                                step=1,
+                                value=1,
+                                marks=None,
+                                tooltip={"placement": "bottom", "always_visible": False},
+                            ),
+                        ],
+                        className="slider-shell",
                     ),
                 ],
-                style=CARD_STYLE,
+                className="section-card",
             ),
-
-            html.Br(),
-
-            # =========================
-            # TELEMETRY GRAPH
-            # =========================
             html.Div(
                 [
-                    dcc.Graph(id="full-session-telemetry-graph"),
+                    dcc.Graph(
+                        id="full-session-telemetry-graph",
+                        className="chart-surface",
+                        config={"displaylogo": False},
+                    ),
                 ],
-                style=CARD_STYLE,
+                className="section-card",
             ),
-
-            html.Br(),
-            # =========================
-            # LAP TIME EVOLUTION GRAPH
-            # =========================
             html.Div(
                 [
-                    dcc.Graph(id="lap-time-evolution-graph")
+                    dcc.Graph(
+                        id="lap-time-evolution-graph",
+                        className="chart-surface",
+                        config={"displaylogo": False},
+                    ),
                 ],
-                style=CARD_STYLE
+                className="section-card",
             ),
-        ]
+        ],
+        className="session-view",
     )
-
-            
