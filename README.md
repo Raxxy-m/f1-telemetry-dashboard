@@ -4,21 +4,37 @@ An interactive Formula 1 telemetry analysis dashboard built using **FastF1**, **
 
 This project explores driver performance comparison, lap consistency, and telemetry-based delta analysis using real F1 session data.
 
-More updates to follow soon!
+The app supports both race weekends and testing events with dynamic event/session handling.
 
 ---
 
 ## Features
 
-- Driver vs Driver comparison
-- Fastest lap extraction
-- Delta time analysis (two comparison modes)
-- Speed, throttle, brake, and gear telemetry plots
-- Track mini-map visualisation
-- Fastest lap comparison table
-- Themed dashboard layout
-
-and more upcoming...
+- Dynamic Year → Event → Session dropdown flow (includes testing events)
+- Driver vs Driver fastest-lap comparison
+- Comparative KPI cards:
+  - Fastest lap gap
+  - Top speed delta
+  - Average speed delta
+  - Largest sector swing
+- Cumulative delta vs distance graph
+- Sector delta bar chart
+- Speed distribution (lap-distance share by speed band)
+- Multi-channel telemetry overlay:
+  - Speed
+  - Throttle
+  - RPM
+  - Brake
+  - Gear
+- Track mini-map with synced cursor position
+- Track segment advantage map (binary faster-driver coloring)
+- Fastest lap benchmark table
+- Session Analysis tab:
+  - Lap drilldown (single driver)
+  - Selected lap vs fastest lap telemetry overlay
+  - Delta to fastest lap graph
+  - Lap time evolution (supports up to 2 drivers)
+  - New lap controls: **Prev / input / Next** + slider sync
 
 ---
 
@@ -58,6 +74,15 @@ Run the app:
 ```
 python3 app.py
 ```
+
+---
+
+## Notes
+
+- Lap drilldown telemetry views are intentionally single-driver.
+- Lap time evolution supports one or two drivers for direct pace comparison.
+- For testing events, sessions are loaded using FastF1 testing-session flow.
+
 ---
 ## License
 This project is for educational and portfolio purposes.
