@@ -1,14 +1,14 @@
 import plotly.graph_objects as go
 from theme import COLORS, apply_standard_hover_layout
 
-def build_mini_track(driver_tel, driver_styles, reference_distance):
-    """
-    TODO: Add comments
-    """
 
+def build_mini_track(driver_tel, driver_styles, reference_distance):
     fig = go.Figure()
 
-    # Plot track using first driver as reference
+    if not driver_tel:
+        fig.update_layout(xaxis=dict(visible=False), yaxis=dict(visible=False))
+        return fig
+
     first_driver = list(driver_tel.keys())[0]
     tel = driver_tel[first_driver]
 
@@ -22,21 +22,32 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
         )
     )
 
-    if reference_distance is not None:
+    for drv, drv_tel in driver_tel.items():
+        style = driver_styles.get(drv, {})
+        marker_color = style.get("color", COLORS["telemetry_2"])
+        marker_name = style.get("label", str(drv))
 
-        # Find nearest telemetry row
-        idx = (tel["Distance"] - reference_distance).abs().idxmin()
+        if reference_distance is not None:
+            idx = (drv_tel["Distance"] - reference_distance).abs().idxmin()
+        else:
+            idx = drv_tel["Distance"].idxmin()
 
         fig.add_trace(
             go.Scatter(
-                x=[tel.loc[idx, "X"]],
-                y=[tel.loc[idx, "Y"]],
+                x=[drv_tel.loc[idx, "X"]],
+                y=[drv_tel.loc[idx, "Y"]],
                 mode="markers",
                 marker=dict(
                     size=10,
-                    color=driver_styles[first_driver]["color"]
+                    color=marker_color,
+                    line=dict(width=1.5, color=COLORS["surface_2"]),
                 ),
-                name=driver_styles[first_driver]["label"]
+                name=marker_name,
+                hovertemplate=(
+                    f"{marker_name}<br>"
+                    "X: %{x:.0f}<br>"
+                    "Y: %{y:.0f}<extra></extra>"
+                ),
             )
         )
     
@@ -46,10 +57,18 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
         title={
             "text": "Track Position",
             "x": 0.5,
-            "xanchor": "center"
+            "xanchor": "center",
+            "y": 0.98,
         },
-        showlegend=False,
-        margin=dict(l=10, r=10, t=40, b=10),
+        showlegend=len(driver_tel) > 1,
+        legend=dict(
+            orientation="h",
+            y=-0.08,
+            x=0.5,
+            xanchor="center",
+            yanchor="top",
+        ),
+        margin=dict(l=10, r=10, t=54, b=36),
         xaxis=dict(visible=False),
         yaxis=dict(visible=False, scaleanchor="x", scaleratio=1, gridcolor=COLORS['grid']),
     )

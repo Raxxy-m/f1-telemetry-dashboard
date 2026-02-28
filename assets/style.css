@@ -202,8 +202,7 @@ body {
 
 .f1-dropdown,
 .f1-dropdown .Select-control,
-.f1-dropdown .Select-placeholder,
-.f1-dropdown .Select-value {
+.f1-dropdown .Select-placeholder {
     min-height: 40px;
 }
 
@@ -221,6 +220,13 @@ body {
 .performance-view,
 .session-view {
     display: grid;
+    gap: var(--space-5);
+}
+
+.summary-grid,
+.session-bottom-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-5);
 }
 
@@ -349,6 +355,56 @@ body {
     color: var(--color-text-tertiary);
     font-size: 0.84rem;
     line-height: 1.4;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.metric-card {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.005));
+    min-height: 96px;
+}
+
+.metric-card-title {
+    color: var(--color-text-tertiary);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.metric-card-value {
+    margin-top: var(--space-2);
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.metric-card-detail {
+    margin-top: var(--space-2);
+    color: var(--color-text-tertiary);
+    font-size: 0.77rem;
+    line-height: 1.35;
+}
+
+.delta-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.9fr);
+    gap: var(--space-4);
+}
+
+.delta-grid-main,
+.delta-grid-side {
+    min-width: 0;
 }
 
 /* ===============================
@@ -489,6 +545,10 @@ body {
     padding: 0 6px !important;
     font-size: 11px !important;
     line-height: 18px !important;
+    max-width: 148px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: auto !important;
 }
 
 .Select--multi .Select-value-icon {
@@ -499,6 +559,33 @@ body {
 .Select--multi .Select-value-icon:hover {
     background: rgba(255, 24, 1, 0.2) !important;
     color: #ffe2df !important;
+}
+
+.Select--multi .Select-value-label {
+    display: inline-block;
+    max-width: 108px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+}
+
+.control-field--wide .Select-multi-value-wrapper {
+    display: block;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: calc(100% - 34px);
+    scrollbar-width: thin;
+}
+
+.control-field--wide .Select-input {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-width: 10px;
+}
+
+.control-field--wide .Select-input > input {
+    width: 10px !important;
 }
 
 /* ===============================
@@ -562,6 +649,30 @@ body {
 ================================ */
 .slider-shell {
     margin-top: var(--space-2);
+}
+
+.lap-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.lap-context-item {
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.lap-context-item--accent {
+    border-color: rgba(255, 24, 1, 0.42);
+    background: rgba(255, 24, 1, 0.1);
+    color: #ffd2cd;
 }
 
 .rc-slider-rail {
@@ -653,6 +764,19 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .delta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .summary-grid,
+    .session-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+
     .mini-track-companion {
         position: static;
         max-width: 340px;
@@ -679,5 +803,9 @@ body {
 
     .custom-tab {
         margin-right: var(--space-4) !important;
+    }
+
+    .metric-grid {
+        grid-template-columns: 1fr;
     }
 }
