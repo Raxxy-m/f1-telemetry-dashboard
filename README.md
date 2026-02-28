@@ -34,7 +34,7 @@ The app supports both race weekends and testing events with dynamic event/sessio
   - Selected lap vs fastest lap telemetry overlay
   - Delta to fastest lap graph
   - Lap time evolution (supports up to 2 drivers)
-  - New lap controls: **Prev / input / Next** + slider sync
+  - New lap controls: **Prev / input / Next**
 
 ---
 

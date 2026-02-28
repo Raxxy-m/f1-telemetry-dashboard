@@ -437,7 +437,6 @@ def register_callbacks(app):
         return {"display": "none"}, {"display": "block"}
 
     @app.callback(
-        Output("lap-slider", "max"),
         Output("lap-input", "max"),
         Output("lap-max-label", "children"),
         Input("year-dd", "value"),
@@ -455,7 +454,7 @@ def register_callbacks(app):
             raise PreventUpdate
 
         if not isinstance(drivers, list) or len(drivers) != 1:
-            return 1, 1, "/ 1 laps"
+            return 1, "/ 1 laps"
 
         driver = drivers[0]
         session = load_session(year, int(gp), int(session_name))
@@ -466,19 +465,17 @@ def register_callbacks(app):
         )
 
         if laps.empty:
-            return 1, 1, "/ 1 laps"
+            return 1, "/ 1 laps"
 
         max_lap = int(laps["LapNumber"].max())
-        return max_lap, max_lap, f"/ {max_lap} laps"
+        return max_lap, f"/ {max_lap} laps"
 
     @app.callback(
-        Output("lap-slider", "value"),
         Output("lap-input", "value"),
-        Input("lap-slider", "value"),
         Input("lap-input", "value"),
         Input("lap-prev-btn", "n_clicks"),
         Input("lap-next-btn", "n_clicks"),
-        Input("lap-slider", "max"),
+        Input("lap-input", "max"),
         Input("year-dd", "value"),
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
@@ -487,7 +484,6 @@ def register_callbacks(app):
         prevent_initial_call=True,
     )
     def sync_lap_controls(
-        slider_value,
         input_value,
         prev_clicks,
         next_clicks,
@@ -505,7 +501,7 @@ def register_callbacks(app):
         trigger_prop = ctx.triggered[0]["prop_id"] if ctx.triggered else ""
         trigger = ctx.triggered_id
 
-        current_value = int(slider_value or input_value or 1)
+        current_value = int(input_value or 1)
 
         if trigger_prop in {
             "year-dd.value",
@@ -521,19 +517,19 @@ def register_callbacks(app):
             next_value = current_value + 1
         elif trigger == "lap-input":
             next_value = int(input_value or current_value)
-        elif trigger_prop == "lap-slider.max":
+        elif trigger_prop == "lap-input.max":
             next_value = current_value
         else:
-            next_value = int(slider_value or current_value)
+            next_value = current_value
 
         next_value = max(1, min(max_lap, next_value))
-        return next_value, next_value
+        return next_value
 
     @app.callback(
         Output("full-session-telemetry-graph", "figure"),
         Output("lap-delta-fastest-graph", "figure"),
         Output("lap-context", "children"),
-        Input("lap-slider", "value"),
+        Input("lap-input", "value"),
         Input("year-dd", "value"),
         Input("gp-dd", "value"),
         Input("session-dd", "value"),

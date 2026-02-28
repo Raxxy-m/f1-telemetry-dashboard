@@ -325,7 +325,7 @@ def session_analysis_layout():
                     section_header(
                         "Session",
                         "Lap Telemetry Drilldown",
-                        "Inspect one driver lap with distance-based speed trace.",
+                        "Inspect one driver lap and compare it against the session fastest lap.",
                     ),
                     html.Div(
                         [
@@ -347,28 +347,9 @@ def session_analysis_layout():
                                 ],
                                 className="lap-stepper",
                             ),
-                            dcc.Slider(
-                                id="lap-slider",
-                                min=1,
-                                max=1,
-                                step=1,
-                                value=1,
-                                marks=None,
-                                tooltip={"placement": "bottom", "always_visible": False},
-                            ),
                             html.Div(id="lap-context", className="lap-context"),
                         ],
                         className="slider-shell",
-                    ),
-                ],
-                className="section-card",
-            ),
-            html.Div(
-                [
-                    section_header(
-                        "Lap Drilldown",
-                        "Selected Lap vs Fastest Lap",
-                        "Distance-synchronized telemetry channels for one driver.",
                     ),
                     dcc.Graph(
                         id="full-session-telemetry-graph",
@@ -377,7 +358,7 @@ def session_analysis_layout():
                         style={"height": "760px"},
                     ),
                 ],
-                className="section-card",
+                className="section-card section-card--lap-controls",
             ),
             html.Div(
                 [
