@@ -1,253 +1,683 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* ===============================
-   ROOT THEME TOKENS
+   Design Tokens
 ================================ */
 :root {
-    /* Backgrounds */
-    --bg-main: #0e1116;
-    --bg-card: #141922;
-    --bg-dropdown: #0f141c;
-    --bg-hover: #1b222c;
+    /* Color system */
+    --color-bg-canvas: #0b0f15;
+    --color-surface-1: #111722;
+    --color-surface-2: #141c28;
+    --color-surface-3: #182131;
+    --color-surface-interactive: #0f151f;
 
-    /* Borders */
-    --border: #1f2632;
+    --color-border-subtle: #273245;
+    --color-border-strong: #34445d;
 
-    /* Text */
-    --font-primary: #e6edf3;
-    --font-muted: #9aa4b2;
+    --color-text-primary: #edf2f8;
+    --color-text-secondary: #bcc7d6;
+    --color-text-tertiary: #93a1b5;
 
-    /* Accent */
-    --accent-red: #FF1801;
-    --accent-red-dark: #cc1400;
+    --color-accent-primary: #FF1801;
+    --color-accent-secondary: #00d97e;
+    --color-warning: #ffb020;
+    --color-sector-purple: #b56cff;
+
+    --color-telemetry-1: #FF1801;
+    --color-telemetry-2: #00d2be;
+    --color-telemetry-3: #4da3ff;
+    --color-telemetry-4: #ffc857;
+    --color-telemetry-5: #f78c6b;
+    --color-telemetry-6: #9b8cff;
+
+    /* Legacy aliases */
+    --bg-main: var(--color-bg-canvas);
+    --bg-card: var(--color-surface-2);
+    --bg-dropdown: var(--color-surface-interactive);
+    --border: var(--color-border-subtle);
+    --font-primary: var(--color-text-primary);
+    --font-muted: var(--color-text-tertiary);
+    --accent-red: var(--color-accent-primary);
+
+    /* Spacing scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 40px;
+    --space-8: 56px;
+
+    /* Radius scale */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    /* Elevation */
+    --shadow-card: 0 8px 22px rgba(0, 0, 0, 0.24);
+    --shadow-card-hover: 0 14px 30px rgba(0, 0, 0, 0.3);
+    --shadow-toolbar: 0 6px 18px rgba(0, 0, 0, 0.26);
+
+    /* Motion */
+    --motion-fast: 150ms;
+    --motion-base: 180ms;
+    --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    /* Layout */
+    --topbar-height: 164px;
+    --container-max: 1560px;
 }
 
 /* ===============================
-   GLOBAL
+   Base
 ================================ */
+* {
+    box-sizing: border-box;
+}
+
+html,
 body {
-    background-color: var(--bg-main) !important;
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif !important;
-    color: var(--font-primary) !important;
     margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* ===============================
-   LAYOUT
-================================ */
+body {
+    background: var(--color-bg-canvas) !important;
+    color: var(--color-text-primary) !important;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+}
+
 .main_container {
-    max-width: 1400px !important;
-    margin: 0 auto !important;
-    padding: 40px 40px 60px 40px !important;
+    width: min(var(--container-max), 100%);
+    margin: 0 auto;
 }
 
-.control-bar {
-    background: var(--bg-card) !important;
-    padding: 14px 18px !important;
-    border-radius: 12px !important;
-    margin-bottom: 28px !important;
-    border: 1px solid var(--border) !important;
-}
-
-.section-card {
-    background: var(--bg-card) !important;
-    padding: 24px !important;
-    border-radius: 16px !important;
-    margin-bottom: 30px !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: 0 0 0 1px var(--border) !important;
-    transition: transform 0.15s ease !important;
-}
-
-.section-card:hover {
-    transform: translate(-2px) !important;
-}
-
-.section-title::after {
-    content: "" !important;
-    display: block !important;
-    width: 40px !important;
-    height: 2px !important;
-    background: var(--accent-red) !important;
-    margin-top: 6px !important;
-}
 /* ===============================
-   TITLES
+   Top Header Bar
 ================================ */
+.dashboard-topbar {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(var(--container-max), 100%);
+    height: var(--topbar-height);
+    display: grid;
+    grid-template-columns: minmax(280px, 1.15fr) minmax(540px, 1.85fr);
+    gap: var(--space-5);
+    align-items: stretch;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-1);
+    box-shadow: var(--shadow-toolbar);
+    z-index: 1000;
+}
+
+.toolbar-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+
+.app-badge {
+    display: inline-flex;
+    width: fit-content;
+    margin-bottom: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 24, 1, 0.36);
+    background: rgba(255, 24, 1, 0.08);
+    color: #ff9388;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
 .dashboard-title {
-    font-size: 2rem !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.5px !important; 
-    color: var(--font-primary) !important;
-    margin-bottom: 30px !important;
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1.55rem;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 
-.section-title {
-    font-size: 1rem !important;
-    font-weight: 500 !important;
-    margin-bottom: 16px !important;
-    color: var(--font-muted) !important;
-    letter-spacing: 0.5px !important;
-    text-transform: uppercase !important;
+.dashboard-subtitle {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.45;
 }
 
-/* ===============================
-   DASH DROPDOWN
-================================ */
-
-/* Control box */
-.Select-control {
-    background-color: var(--bg-dropdown) !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--border) !important;
-    color: var(--font-primary) !important;
-    box-shadow: none !important;
-    height: 42px !important;
+.toolbar-meta {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-tertiary);
+    font-size: 0.76rem;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
 }
 
-/* Remove blue focus ring */
-.Select-control:focus,
-.is-focused .Select-control {
-    border: 1px solid var(--border) !important;
-    box-shadow: none !important;
-}
-
-/* Remove blue background on selected value */
-.Select-placeholder,
-.Select-value {
-    background-color: transparent !important;
-    border: none !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Text inside dropdown */
-.Select-value-label {
-    color: var(--font-primary) !important;
-}
-
-/* Dropdown menu */
-.Select-menu-outer {
-    background-color: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
-    z-index: 9999 !important;
-}
-
-/* Options */
-.Select-option {
-    background-color: var(--bg-card) !important;
-    color: var(--font-primary) !important;
-}
-
-/* Hover */
-.Select-option.is-focused {
-    background-color: var(--bg-hover) !important;
-}
-
-/* Selected option */
-.Select-option.is-selected {
-    background-color: var(--accent-red) !important;
-    color: black !important;
-}
-
-/* Remove active click flash */
-.Select-option:active {
-    background-color: var(--bg-hover) !important;
-}
-
-/* Multi-select pills */
-.Select--multi .Select-value {
-    background-color: var(--bg-hover) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 8px !important;
-    padding: 2px 6px !important;
-}
-
-/* Remove blue input outline */
-.Select-input > input {
-    outline: none !important;
-}
-
-/* Dropdown arrow */
-.Select-arrow {
-    border-color: var(--font-primary) transparent transparent !important;
+.toolbar-right {
+    min-width: 0;
+    display: flex;
+    align-items: center;
 }
 
 /* ===============================
-   PLOTLY
+   Control Grid
 ================================ */
-.js-plotly-plot {
-    border-radius: 14px !important;
-    overflow: hidden !important;
+.control-bar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1.8fr;
+    gap: var(--space-3);
+    align-items: end;
+    padding: var(--space-4);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0)), var(--color-surface-2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.control-field,
+.control-field--wide {
+    min-width: 0;
+}
+
+.control-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--color-text-tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.f1-dropdown,
+.f1-dropdown .Select-control,
+.f1-dropdown .Select-placeholder,
+.f1-dropdown .Select-value {
+    min-height: 40px;
 }
 
 /* ===============================
-   TABLE
+   Main Content Wrapper
 ================================ */
-table {
-    color: var(--font-primary) !important;
+.dashboard-content {
+    padding: calc(var(--topbar-height) + var(--space-5)) var(--space-5) var(--space-7);
 }
 
-.fastest-lap-note {
-    font-size: 0.85rem !important;
-    color: var(--font-muted) !important;
-    margin-bottom: 10px !important;
-    letter-spacing: 0.4px !important;
+.tab-body {
+    display: block;
+}
+
+.performance-view,
+.session-view {
+    display: grid;
+    gap: var(--space-5);
 }
 
 /* ===============================
-   MINI TRACK MAP
+   Tabs Navigation
 ================================ */
-#mini-track-map {
-    margin-top: 120px !important;
-}
-
-/* =========================
-   TABS STYLING
-========================= */
-
 .custom-tabs-container {
-    background-color: transparent !important;
-    border: none !important;
-    margin-bottom: 30px !important;
+    margin-bottom: var(--space-5);
+    padding: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: transparent !important;
 }
 
 .custom-tabs {
     border: none !important;
+    background: transparent !important;
 }
 
 .custom-tab {
-    background-color: var(--bg-card) !important;
-    color: var(--font-muted) !important;
-    padding: 12px 20px !important;
-    border-radius: 8px 8px 0 0 !important;
-    margin-right: 6px !important;
-    border: 1px solid var(--border) !important;
-    border-bottom: none !important;
-    transition: all 0.2s ease-in-out !important;
+    position: relative;
+    margin-right: var(--space-5) !important;
+    padding: var(--space-2) 0 var(--space-3) !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--color-text-tertiary) !important;
+    font-size: 0.89rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition:
+        color var(--motion-fast) var(--motion-ease),
+        opacity var(--motion-fast) var(--motion-ease);
+}
+
+.custom-tab::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 999px;
+    background: transparent;
+    transform: scaleX(0.25);
+    transform-origin: center;
+    transition:
+        transform var(--motion-base) var(--motion-ease),
+        background-color var(--motion-base) var(--motion-ease);
 }
 
 .custom-tab:hover {
-    color: var(--accent-red) !important;
+    color: var(--color-text-secondary) !important;
 }
 
 .custom-tab--selected {
-    background-color: var(--bg-main) !important;
-    color: var(--font-primary) !important;
-    font-weight: 500 !important;
-    border-bottom: 3px solid var(--accent-red) !important;
-}
-/* =========================
-   SLIDER STYLING
-========================= */
-.rc-slider-track {
-    background-color: var(--accent-red) !important;
+    color: var(--color-text-primary) !important;
 }
 
-.rc-slider-handle {
-    border: 2px solid var(--accent-red) !important;
-    background-color: var(--bg-card) !important;
+.custom-tab--selected::after {
+    background: var(--color-accent-primary);
+    transform: scaleX(1);
+}
+
+/* ===============================
+   Section Cards
+================================ */
+.section-card {
+    position: relative;
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-subtle) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0)) ,
+        var(--color-surface-2) !important;
+    box-shadow:
+        var(--shadow-card),
+        inset 0 1px 0 rgba(255, 255, 255, 0.024),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.24);
+    transition:
+        transform var(--motion-fast) ease,
+        box-shadow var(--motion-fast) ease,
+        border-color var(--motion-fast) var(--motion-ease);
+}
+
+.section-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.018);
+    pointer-events: none;
+}
+
+.section-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 24, 1, 0.36) !important;
+    box-shadow:
+        var(--shadow-card-hover),
+        0 0 0 1px rgba(255, 24, 1, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.section-header {
+    margin-bottom: var(--space-4);
+}
+
+.section-kicker {
+    margin-bottom: var(--space-1);
+    color: var(--color-text-tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.section-heading {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1.06rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.28;
+}
+
+.section-subtitle {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-tertiary);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+/* ===============================
+   Telemetry + Mini Track
+================================ */
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.85fr) minmax(220px, 0.9fr);
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.telemetry-main,
+.telemetry-mini {
+    min-width: 0;
+}
+
+.mini-track-companion {
+    position: sticky;
+    top: calc(var(--topbar-height) + var(--space-5));
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-3);
+    padding: var(--space-2);
+}
+
+.mini-track-graph {
+    min-height: 300px;
+}
+
+/* ===============================
+   Plot Containers
+================================ */
+.chart-surface {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.028);
+    background: var(--color-surface-2);
+}
+
+.js-plotly-plot,
+.js-plotly-plot .plot-container,
+.js-plotly-plot .svg-container {
+    border-radius: var(--radius-md) !important;
+}
+
+/* ===============================
+   Dropdown Styling
+================================ */
+.Select-control {
+    background-color: var(--color-surface-interactive) !important;
+    border: 1px solid var(--color-border-subtle) !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--color-text-primary) !important;
+    box-shadow: none !important;
+    transition:
+        border-color var(--motion-fast) var(--motion-ease),
+        box-shadow var(--motion-fast) var(--motion-ease),
+        background-color var(--motion-fast) var(--motion-ease);
+}
+
+.Select-control:hover {
+    border-color: var(--color-border-strong) !important;
+    background-color: #121a27 !important;
+}
+
+.Select.is-focused .Select-control,
+.Select-control:focus {
+    border-color: rgba(255, 24, 1, 0.58) !important;
+    box-shadow: 0 0 0 3px rgba(255, 24, 1, 0.16) !important;
+    background-color: #121a27 !important;
+}
+
+.Select-placeholder,
+.Select-value,
+.Select-value-label,
+.Select-input > input {
+    color: var(--color-text-secondary) !important;
+}
+
+.Select-input > input {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.Select-menu-outer {
+    margin-top: var(--space-1);
+    border: 1px solid var(--color-border-subtle) !important;
+    border-radius: var(--radius-sm) !important;
+    overflow: hidden;
+    background: var(--color-surface-2) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+    z-index: 1100 !important;
+    animation: selectMenuFade var(--motion-fast) var(--motion-ease);
+}
+
+@keyframes selectMenuFade {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.Select-option {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+    background: var(--color-surface-2) !important;
+    color: var(--color-text-secondary) !important;
+    transition:
+        background-color var(--motion-fast) var(--motion-ease),
+        color var(--motion-fast) var(--motion-ease);
+}
+
+.Select-option.is-focused {
+    background: #1a2536 !important;
+    color: var(--color-text-primary) !important;
+}
+
+.Select-option.is-selected {
+    background: rgba(255, 24, 1, 0.18) !important;
+    color: #ffd2cd !important;
+}
+
+.Select-arrow {
+    border-color: var(--color-text-tertiary) transparent transparent !important;
+}
+
+.Select--multi .Select-value {
+    margin-top: 2px !important;
+    margin-right: 4px !important;
+    border: 1px solid rgba(255, 24, 1, 0.32) !important;
+    border-radius: var(--radius-sm) !important;
+    background: rgba(255, 24, 1, 0.12) !important;
+    color: #ffd8d3 !important;
+    padding: 0 6px !important;
+    font-size: 11px !important;
+    line-height: 18px !important;
+}
+
+.Select--multi .Select-value-icon {
+    border-right: 1px solid rgba(255, 24, 1, 0.28) !important;
+    color: #ff998f !important;
+}
+
+.Select--multi .Select-value-icon:hover {
+    background: rgba(255, 24, 1, 0.2) !important;
+    color: #ffe2df !important;
+}
+
+/* ===============================
+   Table Styling
+================================ */
+.dash-table-container .dash-spreadsheet-container {
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner {
+    border: none;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 1px solid var(--color-border-subtle) !important;
+    background: var(--color-surface-3) !important;
+    color: var(--color-text-tertiary) !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    height: 30px !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.032) !important;
+    color: var(--color-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    height: 30px !important;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td:first-child,
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th:first-child {
+    text-align: left !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:nth-child(even) td {
+    background: rgba(255, 255, 255, 0.012) !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover td {
+    background: rgba(255, 255, 255, 0.03) !important;
+    color: var(--color-text-primary) !important;
+}
+
+/* ===============================
+   Slider Styling
+================================ */
+.slider-shell {
+    margin-top: var(--space-2);
 }
 
 .rc-slider-rail {
-    background-color: var(--border) !important;
+    height: 6px !important;
+    border-radius: 999px;
+    background: #2a3547 !important;
+}
+
+.rc-slider-track {
+    height: 6px !important;
+    border-radius: 999px;
+    background: var(--color-accent-primary) !important;
+}
+
+.rc-slider-handle {
+    width: 15px !important;
+    height: 15px !important;
+    margin-top: -5px !important;
+    border: 2px solid #ff6a5c !important;
+    background: #1a2434 !important;
+    box-shadow: 0 0 0 3px rgba(255, 24, 1, 0.14) !important;
+    transition:
+        box-shadow var(--motion-fast) var(--motion-ease),
+        border-color var(--motion-fast) var(--motion-ease),
+        transform var(--motion-fast) var(--motion-ease);
+}
+
+.rc-slider-handle:hover,
+.rc-slider-handle:focus,
+.rc-slider-handle:active,
+.rc-slider-handle-dragging {
+    border-color: #ff857a !important;
+    box-shadow: 0 0 0 4px rgba(255, 24, 1, 0.2) !important;
+    transform: scale(1.03);
+}
+
+/* ===============================
+   Utility
+================================ */
+#mini-track-map {
+    margin-top: 0 !important;
+}
+
+.debug-output {
+    margin-top: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    border: 1px dashed rgba(147, 161, 181, 0.22);
+    background: rgba(255, 255, 255, 0.01);
+    color: #7f8ea3;
+    font-size: 11px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+
+:focus-visible {
+    outline: none;
+}
+
+.custom-tab:focus-visible,
+.Select-control:focus-visible,
+.rc-slider-handle:focus-visible {
+    box-shadow: 0 0 0 3px rgba(255, 24, 1, 0.16) !important;
+}
+
+/* ===============================
+   Responsive
+================================ */
+@media (max-width: 1200px) {
+    :root {
+        --topbar-height: 248px;
+    }
+
+    .dashboard-topbar {
+        grid-template-columns: 1fr;
+        gap: var(--space-4);
+        height: var(--topbar-height);
+    }
+
+    .control-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-content {
+        padding-top: calc(var(--topbar-height) + var(--space-5));
+    }
+
+    .telemetry-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mini-track-companion {
+        position: static;
+        max-width: 340px;
+    }
+}
+
+@media (max-width: 900px) {
+    :root {
+        --topbar-height: 300px;
+    }
+
+    .dashboard-topbar {
+        padding: var(--space-3);
+    }
+
+    .dashboard-content {
+        padding: calc(var(--topbar-height) + var(--space-4)) var(--space-3) var(--space-6);
+    }
+
+    .control-bar {
+        grid-template-columns: 1fr;
+        gap: var(--space-2);
+    }
+
+    .custom-tab {
+        margin-right: var(--space-4) !important;
+    }
 }

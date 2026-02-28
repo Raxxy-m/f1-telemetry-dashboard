@@ -238,7 +238,7 @@ def register_callbacks(app):
             # FASTEST LAP TABLE
             # ==================================================
             columns = []
-            data = {}
+            data = []
 
             df = fastest_lap_table(session, drivers)
             
