@@ -5,10 +5,16 @@ import traceback
 import pandas as pd
 
 from services.telemetry_service import (
-    get_fastest_laps,
     prepare_telemetry,
     compute_binary_delta,
 )
+from services.fastest_lap_service import (
+    resolve_fastest_laps,
+    build_fastest_lap_table,
+    build_fastest_lap_note,
+    format_td,
+)
+from services.kpi_service import compute_comparison_kpi_rows
 from services.style_service import extract_driver_styles
 from services.session_telemetry_services import (
     prepare_session_laps,
@@ -63,19 +69,6 @@ def _message_figure(message, height=360):
     return fig
 
 
-def _format_td(td):
-    if pd.isna(td):
-        return "--"
-    total_seconds = td.total_seconds()
-    mins = int(total_seconds // 60)
-    secs = total_seconds % 60
-    return f"{mins}:{secs:06.3f}"
-
-
-def _safe_td_seconds(td):
-    return td.total_seconds() if pd.notna(td) else 0.0
-
-
 def _metric_card(title, value, detail):
     return html.Div(
         [
@@ -87,88 +80,10 @@ def _metric_card(title, value, detail):
     )
 
 
-def _build_kpi_cards(session, fastest_laps, driver_tel):
-    if len(fastest_laps) != 2:
-        return [
-            _metric_card(
-                "Fastest Lap Gap",
-                "--",
-                "Select exactly 2 drivers to unlock comparison KPIs.",
-            ),
-            _metric_card("Top Speed Delta", "--", "Comparison unavailable."),
-            _metric_card("Average Speed Delta", "--", "Comparison unavailable."),
-            _metric_card("Largest Sector Swing", "--", "Comparison unavailable."),
-        ]
-
-    driver_1, driver_2 = list(fastest_laps.keys())
-    lap_1 = fastest_laps[driver_1]
-    lap_2 = fastest_laps[driver_2]
-
-    abbr_1 = session.get_driver(driver_1)["Abbreviation"]
-    abbr_2 = session.get_driver(driver_2)["Abbreviation"]
-
-    lap_1_s = lap_1["LapTime"].total_seconds()
-    lap_2_s = lap_2["LapTime"].total_seconds()
-
-    if lap_1_s <= lap_2_s:
-        faster_abbr = abbr_1
-        lap_gap = lap_2_s - lap_1_s
-    else:
-        faster_abbr = abbr_2
-        lap_gap = lap_1_s - lap_2_s
-
-    tel_1 = driver_tel[driver_1]
-    tel_2 = driver_tel[driver_2]
-
-    top_1 = float(tel_1["Speed"].max())
-    top_2 = float(tel_2["Speed"].max())
-    avg_1 = float(tel_1["Speed"].mean())
-    avg_2 = float(tel_2["Speed"].mean())
-
-    if top_1 >= top_2:
-        top_adv = top_1 - top_2
-        top_detail = f"{abbr_1} higher vmax"
-    else:
-        top_adv = top_2 - top_1
-        top_detail = f"{abbr_2} higher vmax"
-
-    if avg_1 >= avg_2:
-        avg_adv = avg_1 - avg_2
-        avg_detail = f"{abbr_1} higher average"
-    else:
-        avg_adv = avg_2 - avg_1
-        avg_detail = f"{abbr_2} higher average"
-
-    sector_deltas = [
-        _safe_td_seconds(lap_2["Sector1Time"]) - _safe_td_seconds(lap_1["Sector1Time"]),
-        _safe_td_seconds(lap_2["Sector2Time"]) - _safe_td_seconds(lap_1["Sector2Time"]),
-        _safe_td_seconds(lap_2["Sector3Time"]) - _safe_td_seconds(lap_1["Sector3Time"]),
-    ]
-    max_sector_idx = max(range(len(sector_deltas)), key=lambda idx: abs(sector_deltas[idx]))
-    swing_val = sector_deltas[max_sector_idx]
-    swing_winner = abbr_1 if swing_val >= 0 else abbr_2
-
+def _render_kpi_cards(kpi_rows):
     return [
-        _metric_card(
-            "Fastest Lap Gap",
-            f"{lap_gap:.3f}s",
-            f"{faster_abbr} ahead on fastest lap",
-        ),
-        _metric_card(
-            "Top Speed Delta",
-            f"{top_adv:.1f} km/h",
-            top_detail,
-        ),
-        _metric_card(
-            "Average Speed Delta",
-            f"{avg_adv:.2f} km/h",
-            avg_detail,
-        ),
-        _metric_card(
-            "Largest Sector Swing",
-            f"S{max_sector_idx + 1} {abs(swing_val):.3f}s",
-            f"{swing_winner} strongest sector edge",
-        ),
+        _metric_card(row["title"], row["value"], row["detail"])
+        for row in kpi_rows
     ]
 
 
@@ -290,7 +205,7 @@ def register_callbacks(app):
             if year is None or gp is None or session_type is None or not drivers:
                 return (
                     _blank_fig(),
-                    _build_kpi_cards(None, {}, {}),
+                    _render_kpi_cards(compute_comparison_kpi_rows(None, {}, {})),
                     _blank_fig(),
                     _blank_fig(),
                     _blank_fig(),
@@ -310,22 +225,10 @@ def register_callbacks(app):
             debug_lines.append(f"Total laps: {len(session.laps)}")
             debug_lines.append("")
 
-            official_fastest_laps = get_fastest_laps(session, selected_drivers)
-            fallback_fastest_laps = {}
-            fallback_drivers = []
-
-            if len(official_fastest_laps) < len(selected_drivers):
-                fallback_fastest_laps = get_fastest_laps(
-                    session,
-                    selected_drivers,
-                    only_by_time=True,
-                )
-                for drv in selected_drivers:
-                    if drv not in official_fastest_laps and drv in fallback_fastest_laps:
-                        official_fastest_laps[drv] = fallback_fastest_laps[drv]
-                        fallback_drivers.append(drv)
-
-            fastest_laps = official_fastest_laps
+            fastest_laps, fallback_drivers, selected_drivers = resolve_fastest_laps(
+                session,
+                selected_drivers,
+            )
             driver_tel = {}
             for drv, lap in fastest_laps.items():
                 tel = prepare_telemetry(lap)
@@ -346,7 +249,9 @@ def register_callbacks(app):
             delta_fig = build_cumulative_delta_figure(driver_tel, session)
             sector_fig = build_sector_delta_figure(fastest_laps, session)
             speed_profile_fig = build_speed_profile_figure(driver_tel, session)
-            kpi_cards = _build_kpi_cards(session, fastest_laps, driver_tel)
+            kpi_cards = _render_kpi_cards(
+                compute_comparison_kpi_rows(session, fastest_laps, driver_tel)
+            )
 
             debug_lines.append(f"Drivers plotted: {len(driver_tel)}")
             debug_lines.append("")
@@ -381,51 +286,15 @@ def register_callbacks(app):
             else:
                 track_fig = build_multi_driver_message()
 
-            columns = []
-            data = []
-            fastest_lap_note = ""
-            if fastest_laps:
-                columns = [
-                    {"name": "Driver", "id": "Driver"},
-                    {"name": "LapTime", "id": "LapTime"},
-                    {"name": "Sector1", "id": "Sector1"},
-                    {"name": "Sector2", "id": "Sector2"},
-                    {"name": "Sector3", "id": "Sector3"},
-                ]
-                data = [
-                    {
-                        "Driver": drv,
-                        "LapTime": _format_td(lap["LapTime"]),
-                        "Sector1": _format_td(lap["Sector1Time"]),
-                        "Sector2": _format_td(lap["Sector2Time"]),
-                        "Sector3": _format_td(lap["Sector3Time"]),
-                    }
-                    for drv in selected_drivers
-                    if drv in fastest_laps
-                    for lap in [fastest_laps[drv]]
-                ]
+            columns, data = build_fastest_lap_table(fastest_laps, selected_drivers)
+            fastest_lap_note = build_fastest_lap_note(
+                session,
+                selected_drivers,
+                fallback_drivers,
+            )
 
             if fallback_drivers:
                 fallback_labels = ", ".join(str(drv) for drv in fallback_drivers)
-                note_parts = [
-                    f"Official fastest laps were unavailable for {fallback_labels}.",
-                    "Showing unofficial quickest laps by recorded time.",
-                ]
-
-                selected_laps = session.laps.pick_drivers(selected_drivers)
-                if "IsPersonalBest" in selected_laps.columns:
-                    selected_pb = int((selected_laps["IsPersonalBest"] == True).sum())
-                    if selected_pb == 0:
-                        note_parts.append(
-                            "No selected-driver laps are marked as personal best by the timing feed."
-                        )
-                if "IsAccurate" in selected_laps.columns:
-                    selected_accurate = int((selected_laps["IsAccurate"] == True).sum())
-                    if selected_accurate == 0:
-                        note_parts.append(
-                            "All selected-driver laps are marked non-accurate for this session."
-                        )
-                fastest_lap_note = " ".join(note_parts)
                 debug_lines.append(f"Fastest lap fallback used for: {fallback_labels}")
             elif not data:
                 debug_lines.append("Fastest lap table empty")
@@ -448,7 +317,7 @@ def register_callbacks(app):
         except Exception:
             return (
                 _blank_fig(),
-                _build_kpi_cards(None, {}, {}),
+                _render_kpi_cards(compute_comparison_kpi_rows(None, {}, {})),
                 _blank_fig(),
                 _blank_fig(),
                 _blank_fig(),
@@ -672,11 +541,11 @@ def register_callbacks(app):
 
         context = [
             html.Span(
-                f"Selected Lap {selected_lap_number}: {_format_td(selected_lap['LapTime'])}",
+                f"Selected Lap {selected_lap_number}: {format_td(selected_lap['LapTime'])}",
                 className="lap-context-item",
             ),
             html.Span(
-                f"Fastest Lap {fastest_lap_number}: {_format_td(fastest_lap['LapTime'])}",
+                f"Fastest Lap {fastest_lap_number}: {format_td(fastest_lap['LapTime'])}",
                 className="lap-context-item",
             ),
             html.Span(
