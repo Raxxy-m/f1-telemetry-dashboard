@@ -1,4 +1,3 @@
-import fastf1
 import pandas as pd
 
 
@@ -70,41 +69,12 @@ def get_longest_stint(laps_df):
 
     return laps_df[laps_df['Stint'] == longest_stint_number]
 
-def get_fastest_lap(laps_df):
-    """
-    Returns the fastest lap.
-    """
-    return laps_df.loc[laps_df['LapTime'].idxmin()]
-
 def get_lap_telemetry(lap):
     """
     Returns telemetry for a lap with distance added.
     """
     telemetry = lap.get_telemetry().add_distance()
     return telemetry
-
-def get_overlay_telemetry(laps_df):
-    """
-    Returns telemetry for all laps for overlay mode.
-    """
-    telemetry_data = []
-
-    for _, lap in laps_df.iterlaps():
-        tel = lap.get_telemetry().add_distance()
-        telemetry_data.append(tel)
-
-    return telemetry_data
-
-def get_delta_to_fastest(lap, fastest_lap):
-    """
-    Returns delta time vs fastest lap.
-    """
-    delta, ref_tel, comp_tel = fastest_lap.get_delta_time(lap)
-
-    comp_tel = comp_tel.copy()
-    comp_tel['Delta'] = delta
-
-    return comp_tel
 
 def safe_lap_selection(laps_df, lap_number):
     """
