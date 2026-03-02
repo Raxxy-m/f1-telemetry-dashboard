@@ -4,6 +4,11 @@ from dash import dash_table, dcc, html
 
 from theme import COLORS
 
+GRAPH_CONFIG = {
+    "displaylogo": False,
+    "displayModeBar": False,
+}
+
 
 def section_header(kicker, title, subtitle=None):
     children = [
@@ -23,6 +28,17 @@ def control_field(label, component, wide=False):
             component,
         ],
         className=field_class,
+    )
+
+
+def metric_card(title, value="--", detail="Waiting for driver selection"):
+    return html.Div(
+        [
+            html.Div(title, className="metric-card-title"),
+            html.Div(value, className="metric-card-value"),
+            html.Div(detail, className="metric-card-detail"),
+        ],
+        className="metric-card",
     )
 
 
@@ -141,9 +157,52 @@ def performance_comparison_layout():
             html.Div(
                 [
                     section_header(
+                        "Race Intel",
+                        "Comparative Performance Snapshot",
+                        "Key deltas and split losses from fastest-lap telemetry.",
+                    ),
+                    html.Div(
+                        id="comparison-kpi-cards",
+                        className="metric-grid",
+                        children=[
+                            metric_card("Fastest Lap Gap"),
+                            metric_card("Top Speed Delta"),
+                            metric_card("Average Speed Delta"),
+                            metric_card("Largest Sector Swing"),
+                        ],
+                    ),
+                    html.Div(
+                        [
+                            html.Div(
+                                dcc.Graph(
+                                    id="delta-graph",
+                                    className="chart-surface",
+                                    config=GRAPH_CONFIG,
+                                    style={"height": "360px"},
+                                ),
+                                className="delta-grid-main",
+                            ),
+                            html.Div(
+                                dcc.Graph(
+                                    id="sector-delta-bars",
+                                    className="chart-surface",
+                                    config=GRAPH_CONFIG,
+                                    style={"height": "360px"},
+                                ),
+                                className="delta-grid-side",
+                            ),
+                        ],
+                        className="delta-grid",
+                    ),
+                ],
+                className="section-card",
+            ),
+            html.Div(
+                [
+                    section_header(
                         "Telemetry",
                         "Driver Overlay Analysis",
-                        "Compare speed, throttle, RPM, brake and gear with synchronized cursor tracking.",
+                        "Compare speed, throttle, RPM, brake and gear with synchronized cursor tracking and live mini-map context.",
                     ),
                     html.Div(
                         [
@@ -151,7 +210,8 @@ def performance_comparison_layout():
                                 dcc.Graph(
                                     id="telemetry-graph",
                                     className="chart-surface",
-                                    config={"displaylogo": False},
+                                    config=GRAPH_CONFIG,
+                                    style={"height": "910px"},
                                 ),
                                 className="telemetry-main",
                             ),
@@ -159,7 +219,8 @@ def performance_comparison_layout():
                                 dcc.Graph(
                                     id="mini-track-map",
                                     className="chart-surface mini-track-graph",
-                                    config={"displaylogo": False},
+                                    config=GRAPH_CONFIG,
+                                    style={"height": "360px"},
                                 ),
                                 className="telemetry-mini mini-track-companion",
                             ),
@@ -179,55 +240,77 @@ def performance_comparison_layout():
                     dcc.Graph(
                         id="track-delta",
                         className="chart-surface",
-                        config={"displaylogo": False},
+                        config=GRAPH_CONFIG,
+                        style={"height": "500px"},
                     ),
                 ],
                 className="section-card",
             ),
             html.Div(
                 [
-                    section_header(
-                        "Summary",
-                        "Fastest Lap Table",
-                        "Compact benchmark table for selected drivers.",
-                    ),
-                    dash_table.DataTable(
-                        id="fastest-lap-table",
-                        fixed_rows={"headers": True},
-                        style_as_list_view=True,
-                        style_header={
-                            "backgroundColor": COLORS["surface_2"],
-                            "color": COLORS["text_secondary"],
-                            "border": "none",
-                            "fontWeight": 600,
-                            "fontSize": "11px",
-                            "letterSpacing": "0.08em",
-                            "textTransform": "uppercase",
-                        },
-                        style_cell={
-                            "backgroundColor": "transparent",
-                            "color": COLORS["text_primary"],
-                            "border": "none",
-                            "padding": "8px 10px",
-                            "fontSize": "12px",
-                            "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                            "fontVariantNumeric": "tabular-nums",
-                            "textAlign": "left",
-                        },
-                        style_data_conditional=[
-                            {
-                                "if": {"column_type": "numeric"},
-                                "textAlign": "right",
-                            }
+                    html.Div(
+                        [
+                            section_header(
+                                "Distribution",
+                                "Speed Band Occupancy",
+                                "How much lap distance each driver spends in each speed zone.",
+                            ),
+                            dcc.Graph(
+                                id="speed-profile-graph",
+                                className="chart-surface",
+                                config=GRAPH_CONFIG,
+                                style={"height": "320px"},
+                            ),
                         ],
-                        style_table={
-                            "overflowX": "auto",
-                            "overflowY": "auto",
-                            "maxHeight": "320px",
-                        },
+                        className="section-card",
+                    ),
+                    html.Div(
+                        [
+                            section_header(
+                                "Summary",
+                                "Fastest Lap Table",
+                                "Compact benchmark table for selected drivers.",
+                            ),
+                            dash_table.DataTable(
+                                id="fastest-lap-table",
+                                fixed_rows={"headers": True},
+                                style_as_list_view=True,
+                                style_header={
+                                    "backgroundColor": COLORS["surface_2"],
+                                    "color": COLORS["text_secondary"],
+                                    "border": "none",
+                                    "fontWeight": 600,
+                                    "fontSize": "11px",
+                                    "letterSpacing": "0.08em",
+                                    "textTransform": "uppercase",
+                                },
+                                style_cell={
+                                    "backgroundColor": "transparent",
+                                    "color": COLORS["text_primary"],
+                                    "border": "none",
+                                    "padding": "8px 10px",
+                                    "fontSize": "12px",
+                                    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                                    "fontVariantNumeric": "tabular-nums",
+                                    "textAlign": "left",
+                                },
+                                style_data_conditional=[
+                                    {
+                                        "if": {"column_type": "numeric"},
+                                        "textAlign": "right",
+                                    }
+                                ],
+                                style_table={
+                                    "overflowX": "auto",
+                                    "overflowY": "auto",
+                                    "maxHeight": "320px",
+                                },
+                            ),
+                        ],
+                        className="section-card",
                     ),
                 ],
-                className="section-card",
+                className="summary-grid",
             ),
         ],
         className="performance-view",
@@ -242,45 +325,77 @@ def session_analysis_layout():
                     section_header(
                         "Session",
                         "Lap Telemetry Drilldown",
-                        "Inspect one driver lap with distance-based speed trace.",
+                        "Inspect one driver lap and compare it against the session fastest lap.",
                     ),
                     html.Div(
                         [
                             html.Label("Select Lap", className="control-label"),
-                            dcc.Slider(
-                                id="lap-slider",
-                                min=1,
-                                max=1,
-                                step=1,
-                                value=1,
-                                marks=None,
-                                tooltip={"placement": "bottom", "always_visible": False},
+                            html.Div(
+                                [
+                                    html.Button("Prev", id="lap-prev-btn", className="lap-nav-btn", n_clicks=0),
+                                    dcc.Input(
+                                        id="lap-input",
+                                        type="number",
+                                        min=1,
+                                        max=1,
+                                        step=1,
+                                        value=1,
+                                        className="lap-number-input",
+                                    ),
+                                    html.Span("/ 1 laps", id="lap-max-label", className="lap-max-label"),
+                                    html.Button("Next", id="lap-next-btn", className="lap-nav-btn", n_clicks=0),
+                                ],
+                                className="lap-stepper",
                             ),
+                            html.Div(id="lap-context", className="lap-context"),
                         ],
                         className="slider-shell",
                     ),
-                ],
-                className="section-card",
-            ),
-            html.Div(
-                [
                     dcc.Graph(
                         id="full-session-telemetry-graph",
                         className="chart-surface",
-                        config={"displaylogo": False},
+                        config=GRAPH_CONFIG,
+                        style={"height": "760px"},
                     ),
                 ],
-                className="section-card",
+                className="section-card section-card--lap-controls",
             ),
             html.Div(
                 [
-                    dcc.Graph(
-                        id="lap-time-evolution-graph",
-                        className="chart-surface",
-                        config={"displaylogo": False},
+                    html.Div(
+                        [
+                            section_header(
+                                "Consistency",
+                                "Lap Time Evolution",
+                                "Trend, compound phases and fastest-lap highlight.",
+                            ),
+                            dcc.Graph(
+                                id="lap-time-evolution-graph",
+                                className="chart-surface",
+                                config=GRAPH_CONFIG,
+                                style={"height": "430px"},
+                            ),
+                        ],
+                        className="section-card",
+                    ),
+                    html.Div(
+                        [
+                            section_header(
+                                "Reference Delta",
+                                "Delta to Fastest Lap",
+                                "Positive values indicate time loss versus the fastest lap.",
+                            ),
+                            dcc.Graph(
+                                id="lap-delta-fastest-graph",
+                                className="chart-surface",
+                                config=GRAPH_CONFIG,
+                                style={"height": "360px"},
+                            ),
+                        ],
+                        className="section-card",
                     ),
                 ],
-                className="section-card",
+                className="session-bottom-grid",
             ),
         ],
         className="session-view",

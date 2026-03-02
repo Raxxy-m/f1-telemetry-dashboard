@@ -202,8 +202,7 @@ body {
 
 .f1-dropdown,
 .f1-dropdown .Select-control,
-.f1-dropdown .Select-placeholder,
-.f1-dropdown .Select-value {
+.f1-dropdown .Select-placeholder {
     min-height: 40px;
 }
 
@@ -221,6 +220,13 @@ body {
 .performance-view,
 .session-view {
     display: grid;
+    gap: var(--space-5);
+}
+
+.summary-grid,
+.session-bottom-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-5);
 }
 
@@ -304,6 +310,11 @@ body {
         border-color var(--motion-fast) var(--motion-ease);
 }
 
+.section-card--lap-controls {
+    z-index: 40;
+    overflow: visible;
+}
+
 .section-card::before {
     content: "";
     position: absolute;
@@ -349,6 +360,56 @@ body {
     color: var(--color-text-tertiary);
     font-size: 0.84rem;
     line-height: 1.4;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.metric-card {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.005));
+    min-height: 96px;
+}
+
+.metric-card-title {
+    color: var(--color-text-tertiary);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.metric-card-value {
+    margin-top: var(--space-2);
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.metric-card-detail {
+    margin-top: var(--space-2);
+    color: var(--color-text-tertiary);
+    font-size: 0.77rem;
+    line-height: 1.35;
+}
+
+.delta-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.9fr);
+    gap: var(--space-4);
+}
+
+.delta-grid-main,
+.delta-grid-side {
+    min-width: 0;
 }
 
 /* ===============================
@@ -489,6 +550,10 @@ body {
     padding: 0 6px !important;
     font-size: 11px !important;
     line-height: 18px !important;
+    max-width: 148px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: auto !important;
 }
 
 .Select--multi .Select-value-icon {
@@ -499,6 +564,33 @@ body {
 .Select--multi .Select-value-icon:hover {
     background: rgba(255, 24, 1, 0.2) !important;
     color: #ffe2df !important;
+}
+
+.Select--multi .Select-value-label {
+    display: inline-block;
+    max-width: 108px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+}
+
+.control-field--wide .Select-multi-value-wrapper {
+    display: block;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: calc(100% - 34px);
+    scrollbar-width: thin;
+}
+
+.control-field--wide .Select-input {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-width: 10px;
+}
+
+.control-field--wide .Select-input > input {
+    width: 10px !important;
 }
 
 /* ===============================
@@ -558,44 +650,81 @@ body {
 }
 
 /* ===============================
-   Slider Styling
+   Lap Control Styling
 ================================ */
 .slider-shell {
     margin-top: var(--space-2);
 }
 
-.rc-slider-rail {
-    height: 6px !important;
+.section-card--lap-controls .slider-shell {
+    margin-bottom: var(--space-4);
+}
+
+.lap-stepper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
+}
+
+.lap-nav-btn {
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.lap-nav-btn:hover {
+    border-color: rgba(255, 24, 1, 0.45);
+    color: var(--color-text-primary);
+}
+
+.lap-number-input {
+    width: 72px;
+    height: 30px;
+    padding: 0 8px;
+    border-radius: 7px;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-interactive);
+    color: var(--color-text-primary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.lap-max-label {
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.lap-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.lap-context-item {
+    padding: 5px 9px;
     border-radius: 999px;
-    background: #2a3547 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
 }
 
-.rc-slider-track {
-    height: 6px !important;
-    border-radius: 999px;
-    background: var(--color-accent-primary) !important;
-}
-
-.rc-slider-handle {
-    width: 15px !important;
-    height: 15px !important;
-    margin-top: -5px !important;
-    border: 2px solid #ff6a5c !important;
-    background: #1a2434 !important;
-    box-shadow: 0 0 0 3px rgba(255, 24, 1, 0.14) !important;
-    transition:
-        box-shadow var(--motion-fast) var(--motion-ease),
-        border-color var(--motion-fast) var(--motion-ease),
-        transform var(--motion-fast) var(--motion-ease);
-}
-
-.rc-slider-handle:hover,
-.rc-slider-handle:focus,
-.rc-slider-handle:active,
-.rc-slider-handle-dragging {
-    border-color: #ff857a !important;
-    box-shadow: 0 0 0 4px rgba(255, 24, 1, 0.2) !important;
-    transform: scale(1.03);
+.lap-context-item--accent {
+    border-color: rgba(255, 24, 1, 0.42);
+    background: rgba(255, 24, 1, 0.1);
+    color: #ffd2cd;
 }
 
 /* ===============================
@@ -622,8 +751,7 @@ body {
 }
 
 .custom-tab:focus-visible,
-.Select-control:focus-visible,
-.rc-slider-handle:focus-visible {
+.Select-control:focus-visible {
     box-shadow: 0 0 0 3px rgba(255, 24, 1, 0.16) !important;
 }
 
@@ -653,6 +781,19 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .delta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .summary-grid,
+    .session-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+
     .mini-track-companion {
         position: static;
         max-width: 340px;
@@ -679,5 +820,9 @@ body {
 
     .custom-tab {
         margin-right: var(--space-4) !important;
+    }
+
+    .metric-grid {
+        grid-template-columns: 1fr;
     }
 }
