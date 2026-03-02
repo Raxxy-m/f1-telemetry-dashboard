@@ -75,6 +75,8 @@ def get_driver_telemetry(session, driver: str):
     """
 
     lap = session.laps.pick_driver(driver).pick_fastest()
+    if lap is None or lap.empty:
+        return pd.DataFrame(columns=["Distance", "Speed", "Throttle", "Brake", "nGear", "X", "Y"])
     tel1 = lap.get_telemetry()
 
     tel = tel1.add_distance()
@@ -98,7 +100,7 @@ def fastest_lap_table(session, drivers):
 
     for drv in drivers:
         lap = session.laps.pick_driver(drv).pick_fastest()
-        if lap.empty:
+        if lap is None or lap.empty:
             continue
 
         rows.append({
@@ -120,6 +122,8 @@ def get_track_coords(session, driver):
     :param driver: Driver number or abbr
     """
     lap = session.laps.pick_driver(driver).pick_fastest()
+    if lap is None or lap.empty:
+        return pd.DataFrame(columns=["X", "Y"])
     tel1 = lap.get_telemetry()
     return tel1[['X', 'Y']]
 

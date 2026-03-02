@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def get_fastest_laps(session, drivers):
+def get_fastest_laps(session, drivers, only_by_time=False):
     """
     Return dict: {driver: fastest_lap}
     
@@ -10,14 +10,20 @@ def get_fastest_laps(session, drivers):
     """
     result = {}
 
+    if drivers is None:
+        return result
+    if not isinstance(drivers, (list, tuple, set, pd.Index, np.ndarray)):
+        drivers = [drivers]
+
     for drv in drivers:
         drv_laps = session.laps.pick_drivers(drv)
 
         if drv_laps.empty:
             continue
-        fastest = drv_laps.pick_fastest()
-        
-        if fastest.empty:
+        fastest = drv_laps.pick_fastest(only_by_time=only_by_time)
+
+        # FastF1 can return None when there is no valid timed lap.
+        if fastest is None or fastest.empty:
             continue
         result[drv] = fastest
     

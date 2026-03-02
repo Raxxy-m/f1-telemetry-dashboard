@@ -746,6 +746,13 @@ body {
     white-space: pre-wrap;
 }
 
+.fastest-lap-note {
+    margin-top: var(--space-3);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
 :focus-visible {
     outline: none;
 }

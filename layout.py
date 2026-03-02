@@ -306,6 +306,7 @@ def performance_comparison_layout():
                                     "maxHeight": "320px",
                                 },
                             ),
+                            html.Div(id="fastest-lap-note", className="fastest-lap-note"),
                         ],
                         className="section-card",
                     ),

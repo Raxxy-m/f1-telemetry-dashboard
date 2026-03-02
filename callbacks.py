@@ -34,7 +34,7 @@ from figures.comparison_insights_figure import (
     build_speed_profile_figure,
 )
 
-from data_engine import load_session, fastest_lap_table, get_supported_event_schedule
+from data_engine import load_session, get_supported_event_schedule
 
 
 def _blank_fig():
@@ -264,6 +264,7 @@ def register_callbacks(app):
         Output("track-delta", "figure"),
         Output("fastest-lap-table", "data"),
         Output("fastest-lap-table", "columns"),
+        Output("fastest-lap-note", "children"),
         Output("debug-output", "children"),
         Output("telemetry-store", "data"),
         Input("year-dd", "value"),
@@ -296,18 +297,35 @@ def register_callbacks(app):
                     _blank_fig(),
                     [],
                     [],
+                    "",
                     "\n".join(debug_lines),
                     {},
                 )
 
             session = load_session(year, int(gp), int(session_type))
+            selected_drivers = drivers if isinstance(drivers, list) else [drivers]
 
             debug_lines.append("Session loaded successfully")
             debug_lines.append(f"Event: {session.event['EventName']}")
             debug_lines.append(f"Total laps: {len(session.laps)}")
             debug_lines.append("")
 
-            fastest_laps = get_fastest_laps(session, drivers)
+            official_fastest_laps = get_fastest_laps(session, selected_drivers)
+            fallback_fastest_laps = {}
+            fallback_drivers = []
+
+            if len(official_fastest_laps) < len(selected_drivers):
+                fallback_fastest_laps = get_fastest_laps(
+                    session,
+                    selected_drivers,
+                    only_by_time=True,
+                )
+                for drv in selected_drivers:
+                    if drv not in official_fastest_laps and drv in fallback_fastest_laps:
+                        official_fastest_laps[drv] = fallback_fastest_laps[drv]
+                        fallback_drivers.append(drv)
+
+            fastest_laps = official_fastest_laps
             driver_tel = {}
             for drv, lap in fastest_laps.items():
                 tel = prepare_telemetry(lap)
@@ -365,12 +383,53 @@ def register_callbacks(app):
 
             columns = []
             data = []
-            df = fastest_lap_table(session, drivers)
-            if df.empty:
+            fastest_lap_note = ""
+            if fastest_laps:
+                columns = [
+                    {"name": "Driver", "id": "Driver"},
+                    {"name": "LapTime", "id": "LapTime"},
+                    {"name": "Sector1", "id": "Sector1"},
+                    {"name": "Sector2", "id": "Sector2"},
+                    {"name": "Sector3", "id": "Sector3"},
+                ]
+                data = [
+                    {
+                        "Driver": drv,
+                        "LapTime": _format_td(lap["LapTime"]),
+                        "Sector1": _format_td(lap["Sector1Time"]),
+                        "Sector2": _format_td(lap["Sector2Time"]),
+                        "Sector3": _format_td(lap["Sector3Time"]),
+                    }
+                    for drv in selected_drivers
+                    if drv in fastest_laps
+                    for lap in [fastest_laps[drv]]
+                ]
+
+            if fallback_drivers:
+                fallback_labels = ", ".join(str(drv) for drv in fallback_drivers)
+                note_parts = [
+                    f"Official fastest laps were unavailable for {fallback_labels}.",
+                    "Showing unofficial quickest laps by recorded time.",
+                ]
+
+                selected_laps = session.laps.pick_drivers(selected_drivers)
+                if "IsPersonalBest" in selected_laps.columns:
+                    selected_pb = int((selected_laps["IsPersonalBest"] == True).sum())
+                    if selected_pb == 0:
+                        note_parts.append(
+                            "No selected-driver laps are marked as personal best by the timing feed."
+                        )
+                if "IsAccurate" in selected_laps.columns:
+                    selected_accurate = int((selected_laps["IsAccurate"] == True).sum())
+                    if selected_accurate == 0:
+                        note_parts.append(
+                            "All selected-driver laps are marked non-accurate for this session."
+                        )
+                fastest_lap_note = " ".join(note_parts)
+                debug_lines.append(f"Fastest lap fallback used for: {fallback_labels}")
+            elif not data:
                 debug_lines.append("Fastest lap table empty")
             else:
-                columns = [{"name": col, "id": col} for col in df.columns]
-                data = df.to_dict("records")
                 debug_lines.append("Fastest lap table populated")
 
             return (
@@ -382,6 +441,7 @@ def register_callbacks(app):
                 track_fig,
                 data,
                 columns,
+                fastest_lap_note,
                 "\n".join(debug_lines),
                 store_payload,
             )
@@ -395,6 +455,7 @@ def register_callbacks(app):
                 _blank_fig(),
                 [],
                 [],
+                "",
                 "ERROR:\n" + traceback.format_exc(),
                 {},
             )
