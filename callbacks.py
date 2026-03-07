@@ -170,6 +170,34 @@ def register_callbacks(app):
         return options, next_drivers
 
     @app.callback(
+        Output("data-view-store", "data"),
+        Input("archive-view-btn", "n_clicks"),
+        Input("live-view-btn", "n_clicks"),
+        State("data-view-store", "data"),
+        prevent_initial_call=True,
+    )
+    def set_data_view(archive_clicks, live_clicks, current_view):
+        _ = archive_clicks, live_clicks
+        trigger = ctx.triggered_id
+        if trigger == "archive-view-btn":
+            return "archive-data-view"
+        if trigger == "live-view-btn":
+            return "live-data-view"
+        return current_view or "archive-data-view"
+
+    @app.callback(
+        Output("archive-view-btn", "className"),
+        Output("live-view-btn", "className"),
+        Input("data-view-store", "data"),
+    )
+    def update_data_view_toggle_classes(active_view):
+        archive_active = active_view != "live-data-view"
+        return (
+            "view-toggle-btn view-toggle-btn--active" if archive_active else "view-toggle-btn",
+            "view-toggle-btn view-toggle-btn--active" if not archive_active else "view-toggle-btn",
+        )
+
+    @app.callback(
         Output("telemetry-graph", "figure"),
         Output("comparison-kpi-cards", "children"),
         Output("delta-graph", "figure"),
@@ -185,11 +213,15 @@ def register_callbacks(app):
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
         Input("drivers-dd", "value"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
+        Input("archive-tabs", "value"),
         prevent_initial_call=True,
     )
-    def update_dashboard(year, gp, session_type, drivers, active_tab):
-        if active_tab != "performance-comparison-tab":
+    def update_dashboard(year, gp, session_type, drivers, active_view, active_archive_tab):
+        if (
+            active_view != "archive-data-view"
+            or active_archive_tab != "performance-comparison-tab"
+        ):
             raise PreventUpdate
 
         debug_lines = []
@@ -331,11 +363,15 @@ def register_callbacks(app):
     @app.callback(
         Output("mini-track-map", "figure"),
         Input("telemetry-graph", "hoverData"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
+        Input("archive-tabs", "value"),
         State("telemetry-store", "data"),
     )
-    def update_mini_map(hoverData, active_tab, stored_data):
-        if active_tab != "performance-comparison-tab":
+    def update_mini_map(hoverData, active_view, active_archive_tab, stored_data):
+        if (
+            active_view != "archive-data-view"
+            or active_archive_tab != "performance-comparison-tab"
+        ):
             raise PreventUpdate
 
         if not stored_data:
@@ -356,31 +392,29 @@ def register_callbacks(app):
         )
 
     @app.callback(
+        Output("archive-tabs-container", "style"),
         Output("performance-tab-content", "style"),
         Output("session-tab-content", "style"),
         Output("live-tab-content", "style"),
         Output("global-filter-container", "style"),
         Output("debug-output", "style"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
+        Input("archive-tabs", "value"),
     )
-    def toggle_tabs(tab):
-        if tab == "performance-comparison-tab":
+    def toggle_tabs(active_view, active_archive_tab):
+        if active_view == "archive-data-view":
+            performance_visible = active_archive_tab == "performance-comparison-tab"
+            session_visible = active_archive_tab == "session-analysis-tab"
             return (
                 {"display": "block"},
-                {"display": "none"},
-                {"display": "none"},
-                {"display": "flex", "alignItems": "center"},
-                {"display": "block"},
-            )
-        if tab == "session-analysis-tab":
-            return (
+                {"display": "block" if performance_visible else "none"},
+                {"display": "block" if session_visible else "none"},
                 {"display": "none"},
                 {"display": "block"},
-                {"display": "none"},
-                {"display": "flex", "alignItems": "center"},
                 {"display": "block"},
             )
         return (
+            {"display": "none"},
             {"display": "none"},
             {"display": "none"},
             {"display": "block"},
@@ -392,12 +426,12 @@ def register_callbacks(app):
         Output("live-drivers-dd", "options"),
         Output("live-drivers-dd", "value"),
         Input("live-refresh", "n_intervals"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
         State("live-drivers-dd", "value"),
         prevent_initial_call=True,
     )
-    def update_live_driver_filter(_, active_tab, current_values):
-        if active_tab != "live-session-tab":
+    def update_live_driver_filter(_, active_view, current_values):
+        if active_view != "live-data-view":
             raise PreventUpdate
 
         telemetry_provider.start_live_stream()
@@ -434,12 +468,12 @@ def register_callbacks(app):
         Output("live-card-3-title", "children"),
         Output("live-card-3-subtitle", "children"),
         Input("live-refresh", "n_intervals"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
         Input("live-drivers-dd", "value"),
         prevent_initial_call=True,
     )
-    def update_live_session_graphs(_, active_tab, selected_live_drivers):
-        if active_tab != "live-session-tab":
+    def update_live_session_graphs(_, active_view, selected_live_drivers):
+        if active_view != "live-data-view":
             raise PreventUpdate
 
         def _format_gap(value, leader=False):
@@ -702,11 +736,15 @@ def register_callbacks(app):
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
         Input("drivers-dd", "value"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
+        Input("archive-tabs", "value"),
         prevent_initial_call=True,
     )
-    def update_lap_slider(year, gp, session_name, drivers, active_tab):
-        if active_tab != "session-analysis-tab":
+    def update_lap_slider(year, gp, session_name, drivers, active_view, active_archive_tab):
+        if (
+            active_view != "archive-data-view"
+            or active_archive_tab != "session-analysis-tab"
+        ):
             raise PreventUpdate
 
         if year is None or gp is None or session_name is None or not drivers:
@@ -739,7 +777,8 @@ def register_callbacks(app):
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
         Input("drivers-dd", "value"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
+        Input("archive-tabs", "value"),
         prevent_initial_call=True,
     )
     def sync_lap_controls(
@@ -751,9 +790,13 @@ def register_callbacks(app):
         gp,
         session_name,
         drivers,
-        active_tab,
+        active_view,
+        active_archive_tab,
     ):
-        if active_tab != "session-analysis-tab":
+        if (
+            active_view != "archive-data-view"
+            or active_archive_tab != "session-analysis-tab"
+        ):
             raise PreventUpdate
 
         max_lap = int(max_lap or 1)
@@ -767,7 +810,8 @@ def register_callbacks(app):
             "gp-dd.value",
             "session-dd.value",
             "drivers-dd.value",
-            "view-tabs.value",
+            "data-view-store.data",
+            "archive-tabs.value",
         }:
             next_value = 1
         elif trigger == "lap-prev-btn":
@@ -793,7 +837,8 @@ def register_callbacks(app):
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
         Input("drivers-dd", "value"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
+        Input("archive-tabs", "value"),
         prevent_initial_call=True,
     )
     def update_full_session_graph(
@@ -802,9 +847,13 @@ def register_callbacks(app):
         gp,
         session_name,
         drivers,
-        active_tab,
+        active_view,
+        active_archive_tab,
     ):
-        if active_tab != "session-analysis-tab":
+        if (
+            active_view != "archive-data-view"
+            or active_archive_tab != "session-analysis-tab"
+        ):
             raise PreventUpdate
 
         if (
@@ -891,11 +940,15 @@ def register_callbacks(app):
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
         Input("drivers-dd", "value"),
-        Input("view-tabs", "value"),
+        Input("data-view-store", "data"),
+        Input("archive-tabs", "value"),
         prevent_initial_call=True,
     )
-    def update_lap_time_evolution(year, gp, session_name, drivers, active_tab):
-        if active_tab != "session-analysis-tab":
+    def update_lap_time_evolution(year, gp, session_name, drivers, active_view, active_archive_tab):
+        if (
+            active_view != "archive-data-view"
+            or active_archive_tab != "session-analysis-tab"
+        ):
             raise PreventUpdate
 
         if year is None or gp is None or session_name is None or not drivers:

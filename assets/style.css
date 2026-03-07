@@ -66,7 +66,7 @@
     --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
     /* Layout */
-    --topbar-height: 164px;
+    --topbar-height: 128px;
     --container-max: 1560px;
 }
 
@@ -107,7 +107,7 @@ body {
     width: min(var(--container-max), 100%);
     height: var(--topbar-height);
     display: grid;
-    grid-template-columns: minmax(280px, 1.15fr) minmax(540px, 1.85fr);
+    grid-template-columns: minmax(320px, 1.6fr) minmax(360px, 1fr);
     gap: var(--space-5);
     align-items: stretch;
     padding: var(--space-4) var(--space-5);
@@ -167,11 +167,61 @@ body {
     min-width: 0;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+}
+
+.view-toggle-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+.view-toggle-group {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: 999px;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-2);
+}
+
+.view-toggle-btn {
+    height: 34px;
+    min-width: 180px;
+    padding: 0 var(--space-4);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition:
+        color var(--motion-fast) var(--motion-ease),
+        background-color var(--motion-fast) var(--motion-ease),
+        border-color var(--motion-fast) var(--motion-ease);
+}
+
+.view-toggle-btn:hover {
+    color: var(--color-text-secondary);
+}
+
+.view-toggle-btn--active {
+    color: var(--color-text-primary);
+    border-color: rgba(255, 24, 1, 0.45);
+    background: rgba(255, 24, 1, 0.12);
 }
 
 /* ===============================
    Control Grid
 ================================ */
+.filters-row {
+    margin-bottom: var(--space-5);
+}
+
 .control-bar {
     width: 100%;
     display: grid;
@@ -243,6 +293,14 @@ body {
 .custom-tabs {
     border: none !important;
     background: transparent !important;
+}
+
+.custom-tabs--secondary {
+    margin-bottom: var(--space-4);
+}
+
+.custom-tabs--secondary .custom-tab {
+    font-size: 0.82rem;
 }
 
 .custom-tab {
@@ -807,7 +865,7 @@ body {
 ================================ */
 @media (max-width: 1200px) {
     :root {
-        --topbar-height: 248px;
+        --topbar-height: 176px;
     }
 
     .dashboard-topbar {
@@ -818,6 +876,14 @@ body {
 
     .control-bar {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .view-toggle-shell {
+        align-items: flex-start;
+    }
+
+    .view-toggle-btn {
+        min-width: 160px;
     }
 
     .dashboard-content {
@@ -849,7 +915,7 @@ body {
 
 @media (max-width: 900px) {
     :root {
-        --topbar-height: 300px;
+        --topbar-height: 208px;
     }
 
     .dashboard-topbar {
@@ -863,6 +929,18 @@ body {
     .control-bar {
         grid-template-columns: 1fr;
         gap: var(--space-2);
+    }
+
+    .view-toggle-group {
+        width: 100%;
+        flex-direction: column;
+        border-radius: var(--radius-md);
+    }
+
+    .view-toggle-btn {
+        width: 100%;
+        min-width: 0;
+        border-radius: var(--radius-sm);
     }
 
     .custom-tab {

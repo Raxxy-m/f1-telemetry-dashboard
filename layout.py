@@ -42,6 +42,37 @@ def metric_card(title, value="--", detail="Waiting for driver selection"):
     )
 
 
+def global_filter_bar(year_options, current_year):
+    return html.Div(
+        [
+            control_field(
+                "Season",
+                dcc.Dropdown(
+                    id="year-dd",
+                    options=year_options,
+                    value=current_year,
+                    clearable=False,
+                    className="f1-dropdown",
+                ),
+            ),
+            control_field(
+                "Grand Prix",
+                dcc.Dropdown(id="gp-dd", className="f1-dropdown"),
+            ),
+            control_field(
+                "Session",
+                dcc.Dropdown(id="session-dd", className="f1-dropdown"),
+            ),
+            control_field(
+                "Drivers",
+                dcc.Dropdown(id="drivers-dd", multi=True, className="f1-dropdown"),
+                wide=True,
+            ),
+        ],
+        className="control-bar",
+    )
+
+
 def create_layout():
     current_year = datetime.now().year
 
@@ -73,34 +104,28 @@ def create_layout():
                         [
                             html.Div(
                                 [
-                                    control_field(
-                                        "Season",
-                                        dcc.Dropdown(
-                                            id="year-dd",
-                                            options=year_options,
-                                            value=current_year,
-                                            clearable=False,
-                                            className="f1-dropdown",
-                                        ),
-                                    ),
-                                    control_field(
-                                        "Grand Prix",
-                                        dcc.Dropdown(id="gp-dd", className="f1-dropdown"),
-                                    ),
-                                    control_field(
-                                        "Session",
-                                        dcc.Dropdown(id="session-dd", className="f1-dropdown"),
-                                    ),
-                                    control_field(
-                                        "Drivers",
-                                        dcc.Dropdown(id="drivers-dd", multi=True, className="f1-dropdown"),
-                                        wide=True,
+                                    html.Label("Data View", className="control-label"),
+                                    html.Div(
+                                        [
+                                            html.Button(
+                                                "Archive Data View",
+                                                id="archive-view-btn",
+                                                className="view-toggle-btn view-toggle-btn--active",
+                                                n_clicks=0,
+                                            ),
+                                            html.Button(
+                                                "Live Data View",
+                                                id="live-view-btn",
+                                                className="view-toggle-btn",
+                                                n_clicks=0,
+                                            ),
+                                        ],
+                                        className="view-toggle-group",
                                     ),
                                 ],
-                                className="control-bar",
+                                className="view-toggle-shell",
                             ),
                         ],
-                        id="global-filter-container",
                         className="toolbar-right",
                     ),
                 ],
@@ -109,31 +134,33 @@ def create_layout():
             ),
             html.Main(
                 [
-                    dcc.Tabs(
-                        id="view-tabs",
-                        value="performance-comparison-tab",
-                        parent_className="custom-tabs",
-                        className="custom-tabs-container",
-                        children=[
-                            dcc.Tab(
-                                label="Performance Comparison",
-                                value="performance-comparison-tab",
-                                className="custom-tab",
-                                selected_className="custom-tab--selected",
-                            ),
-                            dcc.Tab(
-                                label="Session Analysis",
-                                value="session-analysis-tab",
-                                className="custom-tab",
-                                selected_className="custom-tab--selected",
-                            ),
-                            dcc.Tab(
-                                label="Live Session",
-                                value="live-session-tab",
-                                className="custom-tab",
-                                selected_className="custom-tab--selected",
-                            ),
-                        ],
+                    html.Div(
+                        global_filter_bar(year_options, current_year),
+                        id="global-filter-container",
+                        className="filters-row",
+                    ),
+                    html.Div(
+                        dcc.Tabs(
+                            id="archive-tabs",
+                            value="performance-comparison-tab",
+                            parent_className="custom-tabs custom-tabs--secondary",
+                            className="custom-tabs-container",
+                            children=[
+                                dcc.Tab(
+                                    label="Performance Comparison",
+                                    value="performance-comparison-tab",
+                                    className="custom-tab",
+                                    selected_className="custom-tab--selected",
+                                ),
+                                dcc.Tab(
+                                    label="Session Analysis",
+                                    value="session-analysis-tab",
+                                    className="custom-tab",
+                                    selected_className="custom-tab--selected",
+                                ),
+                            ],
+                        ),
+                        id="archive-tabs-container",
                     ),
                     html.Div(
                         [
@@ -160,6 +187,7 @@ def create_layout():
                         interval=4000,
                         n_intervals=0,
                     ),
+                    dcc.Store(id="data-view-store", data="archive-data-view"),
                     dcc.Store(id="telemetry-store"),
                 ],
                 className="dashboard-content",
@@ -571,6 +599,20 @@ def live_session_layout():
             ),
             html.Div(
                 [
+                    html.Div(
+                        [
+                            section_header(
+                                "Driver Telemetry",
+                                "Driver Telemetry Graphs",
+                                "Driver-specific live telemetry panels will be added here next.",
+                            ),
+                            html.Div(
+                                "Placeholder: upcoming live telemetry breakdown per driver.",
+                                className="section-subtitle",
+                            ),
+                        ],
+                        className="section-card",
+                    ),
                     html.Div(
                         [
                             html.Div(
