@@ -100,9 +100,11 @@ def create_layout():
                                 className="control-bar",
                             ),
                         ],
+                        id="global-filter-container",
                         className="toolbar-right",
                     ),
                 ],
+                id="dashboard-topbar",
                 className="dashboard-topbar",
             ),
             html.Main(
@@ -125,6 +127,12 @@ def create_layout():
                                 className="custom-tab",
                                 selected_className="custom-tab--selected",
                             ),
+                            dcc.Tab(
+                                label="Live Session",
+                                value="live-session-tab",
+                                className="custom-tab",
+                                selected_className="custom-tab--selected",
+                            ),
                         ],
                     ),
                     html.Div(
@@ -138,10 +146,20 @@ def create_layout():
                                 id="session-tab-content",
                                 style={"display": "none"},
                             ),
+                            html.Div(
+                                live_session_layout(),
+                                id="live-tab-content",
+                                style={"display": "none"},
+                            ),
                         ],
                         className="tab-body",
                     ),
                     html.Pre(id="debug-output", className="debug-output"),
+                    dcc.Interval(
+                        id="live-refresh",
+                        interval=4000,
+                        n_intervals=0,
+                    ),
                     dcc.Store(id="telemetry-store"),
                 ],
                 className="dashboard-content",
@@ -391,6 +409,123 @@ def session_analysis_layout():
                                 className="chart-surface",
                                 config=GRAPH_CONFIG,
                                 style={"height": "360px"},
+                            ),
+                        ],
+                        className="section-card",
+                    ),
+                ],
+                className="session-bottom-grid",
+            ),
+        ],
+        className="session-view",
+    )
+
+
+def live_session_layout():
+    return html.Div(
+        [
+            html.Div(
+                [
+                    section_header(
+                        "Live",
+                        "Live Session Strategy View",
+                        "Streaming charts powered by LiveF1 TimingData with rolling pace, position shifts and gap deltas.",
+                    ),
+                    html.Div(
+                        [
+                            html.Span(
+                                "LIVE STREAM",
+                                id="live-source-badge",
+                                className="source-badge source-badge--live",
+                            )
+                        ],
+                        className="live-source-row",
+                    ),
+                    html.Div(
+                        id="live-session-status",
+                        className="lap-context",
+                    ),
+                    html.Div(
+                        id="live-session-meta",
+                        className="lap-context",
+                    ),
+                    html.Div(
+                        id="live-session-profile-note",
+                        children="Graphs adapt automatically to Race, Qualifying or Practice/Test sessions.",
+                        className="section-subtitle",
+                    ),
+                    html.Div(
+                        [
+                            html.Label("Live Driver Filter", className="control-label"),
+                            dcc.Dropdown(
+                                id="live-drivers-dd",
+                                options=[],
+                                value=[],
+                                multi=True,
+                                placeholder="All drivers",
+                                className="f1-dropdown",
+                            ),
+                        ],
+                        className="slider-shell",
+                    ),
+                ],
+                className="section-card section-card--live-controls",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Div("Live", id="live-card-1-kicker", className="section-kicker"),
+                            html.H2("Primary Live Graph", id="live-card-1-title", className="section-heading"),
+                            html.P("Waiting for session profile...", id="live-card-1-subtitle", className="section-subtitle"),
+                        ],
+                        className="section-header",
+                    ),
+                    dcc.Graph(
+                        id="live-position-graph",
+                        className="chart-surface",
+                        config=GRAPH_CONFIG,
+                        style={"height": "430px"},
+                    ),
+                ],
+                className="section-card",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.Div("Live", id="live-card-2-kicker", className="section-kicker"),
+                                    html.H2("Secondary Live Graph", id="live-card-2-title", className="section-heading"),
+                                    html.P("Waiting for session profile...", id="live-card-2-subtitle", className="section-subtitle"),
+                                ],
+                                className="section-header",
+                            ),
+                            dcc.Graph(
+                                id="live-gap-graph",
+                                className="chart-surface",
+                                config=GRAPH_CONFIG,
+                                style={"height": "430px"},
+                            ),
+                        ],
+                        className="section-card",
+                    ),
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.Div("Live", id="live-card-3-kicker", className="section-kicker"),
+                                    html.H2("Tertiary Live Graph", id="live-card-3-title", className="section-heading"),
+                                    html.P("Waiting for session profile...", id="live-card-3-subtitle", className="section-subtitle"),
+                                ],
+                                className="section-header",
+                            ),
+                            dcc.Graph(
+                                id="live-pace-graph",
+                                className="chart-surface",
+                                config=GRAPH_CONFIG,
+                                style={"height": "430px"},
                             ),
                         ],
                         className="section-card",

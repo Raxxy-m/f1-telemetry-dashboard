@@ -82,6 +82,14 @@ python3 app.py
 - Lap drilldown telemetry views are intentionally single-driver.
 - Lap time evolution supports one or two drivers for direct pace comparison.
 - For testing events, sessions are loaded using FastF1 testing-session flow.
+- Live Session tab uses a hybrid provider:
+  - FastF1 for historical/performance/session-analysis views
+  - LiveF1 realtime stream for active session updates
+  - LiveF1 archive fallback for the latest completed session when no live timing packets are available
+- Live Session tab is session-aware:
+  - Race/Sprint: Position timeline, gap monitoring, rolling race pace
+  - Qualifying/Shootout: Best-lap progression, gap to provisional pole, best lap vs speed
+  - Practice/Testing: Long-run pace, run volume/pit cycles, best lap vs consistency
 
 ---
 ## License

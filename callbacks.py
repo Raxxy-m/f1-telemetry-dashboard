@@ -15,13 +15,13 @@ from services.fastest_lap_service import (
     format_td,
 )
 from services.kpi_service import compute_comparison_kpi_rows
-from services.style_service import extract_driver_styles
 from services.session_telemetry_services import (
     prepare_session_laps,
     safe_lap_selection,
     get_lap_telemetry,
     get_lap_time_evolution_data,
 )
+from services.telemetry_provider import telemetry_provider
 from figures.telemetry_figure import build_telemetry_figure
 from figures.track_figure import (
     build_single_driver_track,
@@ -39,8 +39,7 @@ from figures.comparison_insights_figure import (
     build_sector_delta_figure,
     build_speed_profile_figure,
 )
-
-from data_engine import load_session, get_supported_event_schedule
+from figures.live_session_figure import build_session_specific_live_figures
 
 
 def _blank_fig():
@@ -98,7 +97,7 @@ def register_callbacks(app):
         if not year:
             return [], None
 
-        schedule = get_supported_event_schedule(year)
+        schedule = telemetry_provider.get_supported_event_schedule(year)
         options = [
             {
                 "label": (
@@ -124,7 +123,7 @@ def register_callbacks(app):
         if year is None or gp is None:
             return [], None
 
-        schedule = get_supported_event_schedule(year)
+        schedule = telemetry_provider.get_supported_event_schedule(year)
         gp_idx = int(gp)
         if gp_idx < 0 or gp_idx >= len(schedule):
             return [], None
@@ -157,7 +156,7 @@ def register_callbacks(app):
         if year is None or gp is None or session_type is None:
             return [], []
 
-        session = load_session(year, int(gp), int(session_type))
+        session = telemetry_provider.load_historical_session(year, int(gp), int(session_type))
         options = [
             {
                 "label": f"{session.get_driver(d)['Abbreviation']} ({d})",
@@ -217,7 +216,7 @@ def register_callbacks(app):
                     {},
                 )
 
-            session = load_session(year, int(gp), int(session_type))
+            session = telemetry_provider.load_historical_session(year, int(gp), int(session_type))
             selected_drivers = drivers if isinstance(drivers, list) else [drivers]
 
             debug_lines.append("Session loaded successfully")
@@ -235,7 +234,7 @@ def register_callbacks(app):
                 driver_tel[drv] = tel
                 debug_lines.append(f"{drv}: Telemetry rows = {len(tel)}")
 
-            driver_style = extract_driver_styles(session, drivers)
+            driver_style = telemetry_provider.get_driver_styles(session, drivers)
 
             store_payload = {
                 "telemetry": {
@@ -359,12 +358,250 @@ def register_callbacks(app):
     @app.callback(
         Output("performance-tab-content", "style"),
         Output("session-tab-content", "style"),
+        Output("live-tab-content", "style"),
+        Output("global-filter-container", "style"),
+        Output("debug-output", "style"),
         Input("view-tabs", "value"),
     )
     def toggle_tabs(tab):
         if tab == "performance-comparison-tab":
-            return {"display": "block"}, {"display": "none"}
-        return {"display": "none"}, {"display": "block"}
+            return (
+                {"display": "block"},
+                {"display": "none"},
+                {"display": "none"},
+                {"display": "flex", "alignItems": "center"},
+                {"display": "block"},
+            )
+        if tab == "session-analysis-tab":
+            return (
+                {"display": "none"},
+                {"display": "block"},
+                {"display": "none"},
+                {"display": "flex", "alignItems": "center"},
+                {"display": "block"},
+            )
+        return (
+            {"display": "none"},
+            {"display": "none"},
+            {"display": "block"},
+            {"display": "none"},
+            {"display": "none"},
+        )
+
+    @app.callback(
+        Output("live-drivers-dd", "options"),
+        Output("live-drivers-dd", "value"),
+        Input("live-refresh", "n_intervals"),
+        Input("view-tabs", "value"),
+        State("live-drivers-dd", "value"),
+        prevent_initial_call=True,
+    )
+    def update_live_driver_filter(_, active_tab, current_values):
+        if active_tab != "live-session-tab":
+            raise PreventUpdate
+
+        telemetry_provider.start_live_stream()
+        snapshot = telemetry_provider.get_live_snapshot(include_archive_fallback=True)
+        labels = snapshot.get("driver_labels", [])
+        options = [{"label": "All Drivers", "value": "__ALL__"}] + [
+            {"label": label, "value": label} for label in labels
+        ]
+        allowed = {opt["value"] for opt in options}
+        current_values = current_values or []
+        next_values = [value for value in current_values if value in allowed]
+        if "__ALL__" in next_values:
+            next_values = ["__ALL__"]
+        return options, next_values
+
+    @app.callback(
+        Output("live-position-graph", "figure"),
+        Output("live-gap-graph", "figure"),
+        Output("live-pace-graph", "figure"),
+        Output("live-session-status", "children"),
+        Output("live-session-meta", "children"),
+        Output("live-session-profile-note", "children"),
+        Output("live-source-badge", "children"),
+        Output("live-source-badge", "className"),
+        Output("live-card-1-kicker", "children"),
+        Output("live-card-1-title", "children"),
+        Output("live-card-1-subtitle", "children"),
+        Output("live-card-2-kicker", "children"),
+        Output("live-card-2-title", "children"),
+        Output("live-card-2-subtitle", "children"),
+        Output("live-card-3-kicker", "children"),
+        Output("live-card-3-title", "children"),
+        Output("live-card-3-subtitle", "children"),
+        Input("live-refresh", "n_intervals"),
+        Input("view-tabs", "value"),
+        Input("live-drivers-dd", "value"),
+        prevent_initial_call=True,
+    )
+    def update_live_session_graphs(_, active_tab, selected_live_drivers):
+        if active_tab != "live-session-tab":
+            raise PreventUpdate
+
+        telemetry_provider.start_live_stream()
+        snapshot = telemetry_provider.get_live_snapshot(include_archive_fallback=True)
+
+        position_df = snapshot["position_df"].copy()
+        pit_lap_df = snapshot["pit_lap_df"].copy()
+        gap_df = snapshot["gap_df"].copy()
+        pace_df = snapshot["pace_df"].copy()
+        bestlap_df = snapshot["bestlap_df"].copy()
+        speed_df = snapshot["speed_df"].copy()
+        stint_summary_df = snapshot["stint_summary_df"].copy()
+        bestlap_summary_df = snapshot["bestlap_summary_df"].copy()
+
+        selected_live_drivers = selected_live_drivers or []
+        selected_set = {str(value) for value in selected_live_drivers}
+        all_selected = "__ALL__" in selected_set
+
+        if selected_live_drivers and not all_selected:
+            selected_set = {str(value) for value in selected_live_drivers}
+            position_df = position_df[position_df["driver_label"].isin(selected_set)]
+            pit_lap_df = pit_lap_df[pit_lap_df["driver_label"].isin(selected_set)]
+            gap_df = gap_df[gap_df["driver_label"].isin(selected_set)]
+            pace_df = pace_df[pace_df["driver_label"].isin(selected_set)]
+            bestlap_df = bestlap_df[bestlap_df["driver_label"].isin(selected_set)]
+            speed_df = speed_df[speed_df["driver_label"].isin(selected_set)]
+            stint_summary_df = stint_summary_df[stint_summary_df["driver_label"].isin(selected_set)]
+            bestlap_summary_df = bestlap_summary_df[bestlap_summary_df["driver_label"].isin(selected_set)]
+
+        fastest_lap_row = snapshot["fastest_lap_row"]
+        if fastest_lap_row and selected_live_drivers and not all_selected:
+            if str(fastest_lap_row.get("driver_label")) not in {
+                str(value) for value in selected_live_drivers
+            }:
+                fastest_lap_row = None
+
+        position_fig, gap_fig, pace_fig, profile = build_session_specific_live_figures(
+            session_category=snapshot.get("session_category", "practice"),
+            position_df=position_df,
+            pit_lap_df=pit_lap_df,
+            safety_laps=snapshot["safety_laps"],
+            gap_df=gap_df,
+            pace_df=pace_df,
+            bestlap_df=bestlap_df,
+            speed_df=speed_df,
+            stint_summary_df=stint_summary_df,
+            bestlap_summary_df=bestlap_summary_df,
+            fastest_lap_row=fastest_lap_row,
+        )
+
+        status = snapshot["status"]
+        filtered_driver_count = int(bestlap_summary_df["driver_label"].nunique()) if not bestlap_summary_df.empty else 0
+        status_items = [
+            html.Span(
+                f"Stream Running: {'yes' if status['running'] else 'no'}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Buffered Events: {status['event_count']}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Drivers Tracked: {filtered_driver_count}/{snapshot['driver_count']}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Last Packet: {status.get('last_event_at') or '-'}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Safety Laps Marked: {len(snapshot['safety_laps'])}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Session Profile: {snapshot.get('session_category', 'practice').title()}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Data Source: {status.get('source', snapshot.get('source', 'live_stream'))}",
+                className="lap-context-item",
+            ),
+        ]
+
+        if status.get("last_error"):
+            status_items.append(
+                html.Span(
+                    f"LiveF1 Error: {status['last_error']}",
+                    className="lap-context-item lap-context-item--accent",
+                )
+            )
+        if status.get("archive_error"):
+            status_items.append(
+                html.Span(
+                    f"Archive Error: {status['archive_error']}",
+                    className="lap-context-item lap-context-item--accent",
+                )
+            )
+
+        session_meta = snapshot.get("session_meta", {})
+        meta_items = [
+            html.Span(
+                f"Meeting: {session_meta.get('meeting_name', '-')}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Session: {session_meta.get('session_name', '-')}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Circuit: {session_meta.get('circuit_name', '-')} ({session_meta.get('country_name', '-')})",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Session Status: {session_meta.get('session_status', '-')}",
+                className="lap-context-item",
+            ),
+            html.Span(
+                f"Track Status: {session_meta.get('track_status', '-')} - {session_meta.get('track_message', '-')}",
+                className="lap-context-item",
+            ),
+        ]
+        if status.get("archive_session_path"):
+            meta_items.append(
+                html.Span(
+                    f"Archive Path: {status['archive_session_path']}",
+                    className="lap-context-item",
+                )
+            )
+
+        source = str(status.get("source", snapshot.get("source", "live_stream")))
+        if source == "livef1_archive":
+            badge_text = "ARCHIVE (LAST COMPLETED SESSION)"
+            badge_class = "source-badge source-badge--archive"
+        else:
+            badge_text = "LIVE STREAM"
+            badge_class = "source-badge source-badge--live"
+
+        cards = profile.get("cards", [])
+        card_defaults = [
+            {"kicker": "Live", "title": "Graph 1", "subtitle": ""},
+            {"kicker": "Live", "title": "Graph 2", "subtitle": ""},
+            {"kicker": "Live", "title": "Graph 3", "subtitle": ""},
+        ]
+        cards = (cards + card_defaults)[:3]
+
+        return (
+            position_fig,
+            gap_fig,
+            pace_fig,
+            status_items,
+            meta_items,
+            profile.get("profile_note", ""),
+            badge_text,
+            badge_class,
+            cards[0]["kicker"],
+            cards[0]["title"],
+            cards[0]["subtitle"],
+            cards[1]["kicker"],
+            cards[1]["title"],
+            cards[1]["subtitle"],
+            cards[2]["kicker"],
+            cards[2]["title"],
+            cards[2]["subtitle"],
+        )
 
     @app.callback(
         Output("lap-input", "max"),
@@ -387,7 +624,7 @@ def register_callbacks(app):
             return 1, "/ 1 laps"
 
         driver = drivers[0]
-        session = load_session(year, int(gp), int(session_name))
+        session = telemetry_provider.load_historical_session(year, int(gp), int(session_name))
         laps = prepare_session_laps(
             session=session,
             driver_code=driver,
@@ -500,7 +737,7 @@ def register_callbacks(app):
             )
 
         driver = drivers[0]
-        session = load_session(year, int(gp), int(session_name))
+        session = telemetry_provider.load_historical_session(year, int(gp), int(session_name))
         laps = prepare_session_laps(
             session=session,
             driver_code=driver,
@@ -578,7 +815,7 @@ def register_callbacks(app):
         if len(drivers) > 2:
             return _message_figure("Select up to 2 drivers for lap-time evolution comparison.", height=430)
 
-        session = load_session(year, int(gp), int(session_name))
+        session = telemetry_provider.load_historical_session(year, int(gp), int(session_name))
         payloads = []
         for driver in drivers:
             laps = session.laps.pick_drivers(driver)

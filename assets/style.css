@@ -315,6 +315,11 @@ body {
     overflow: visible;
 }
 
+.section-card--live-controls {
+    z-index: 60;
+    overflow: visible;
+}
+
 .section-card::before {
     content: "";
     position: absolute;
@@ -444,6 +449,8 @@ body {
    Plot Containers
 ================================ */
 .chart-surface {
+    position: relative;
+    z-index: 1;
     border-radius: var(--radius-md);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.028);
@@ -502,7 +509,7 @@ body {
     overflow: hidden;
     background: var(--color-surface-2) !important;
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
-    z-index: 1100 !important;
+    z-index: 5000 !important;
     animation: selectMenuFade var(--motion-fast) var(--motion-ease);
 }
 
@@ -654,10 +661,15 @@ body {
 ================================ */
 .slider-shell {
     margin-top: var(--space-2);
+    position: relative;
 }
 
 .section-card--lap-controls .slider-shell {
     margin-bottom: var(--space-4);
+}
+
+.section-card--live-controls .slider-shell {
+    z-index: 70;
 }
 
 .lap-stepper {
@@ -708,6 +720,34 @@ body {
     flex-wrap: wrap;
     gap: var(--space-2);
     margin-top: var(--space-3);
+}
+
+.live-source-row {
+    margin-top: var(--space-3);
+}
+
+.source-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+
+.source-badge--live {
+    color: #a8ffd8;
+    border-color: rgba(36, 216, 142, 0.45);
+    background: rgba(36, 216, 142, 0.12);
+}
+
+.source-badge--archive {
+    color: #ffe2ad;
+    border-color: rgba(255, 176, 32, 0.46);
+    background: rgba(255, 176, 32, 0.13);
 }
 
 .lap-context-item {

@@ -4,6 +4,17 @@
 
 # cache folders
 cache/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.mypy_cache/
+*.py[cod]
 
 # data store
 .DS_Store
+
+# logs
+*.log
+
+# local test artifacts / experiments
+tests/
