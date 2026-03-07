@@ -48,6 +48,7 @@ ARCHIVE_STREAM_TOPICS: set[str] = {
 
 ARCHIVE_CACHE_TTL_SECONDS = 300
 LIVE_STALE_SECONDS = 90
+SPRINT_WINDOW_SWITCH_LAP = 5
 
 SAFETY_STATUS_CODES = {"4", "5", "6", "7"}
 
@@ -283,6 +284,7 @@ def _build_live_dataframes(events: list[dict[str, Any]]) -> dict[str, Any]:
         track_message=current_track_message,
     )
     session_category = _classify_session(session_meta)
+    is_sprint_session = _is_sprint_session(session_meta)
 
     if not timing_rows:
         empty_df = pd.DataFrame()
@@ -302,6 +304,7 @@ def _build_live_dataframes(events: list[dict[str, Any]]) -> dict[str, Any]:
             "driver_labels": [],
             "session_meta": session_meta,
             "session_category": session_category,
+            "is_sprint_session": is_sprint_session,
         }
 
     timing_df = pd.DataFrame(timing_rows).sort_values("seq").reset_index(drop=True)
@@ -362,10 +365,28 @@ def _build_live_dataframes(events: list[dict[str, Any]]) -> dict[str, Any]:
     pace_df = pace_df[~pace_df["in_pit"]].copy()
     pace_df = pace_df.sort_values(["driver_label", "lap_number"]).reset_index(drop=True)
     if not pace_df.empty:
+        pace_df["rolling_2lap_s"] = (
+            pace_df.groupby("driver_no")["last_lap_time_s"]
+            .transform(lambda s: s.rolling(window=2, min_periods=1).mean())
+        )
         pace_df["rolling_3lap_s"] = (
             pace_df.groupby("driver_no")["last_lap_time_s"]
             .transform(lambda s: s.rolling(window=3, min_periods=1).mean())
         )
+        pace_df["clean_lap_index"] = pace_df.groupby("driver_no").cumcount() + 1
+
+        if session_category == "race" and is_sprint_session:
+            two_lap_mask = pace_df["clean_lap_index"] < SPRINT_WINDOW_SWITCH_LAP
+            pace_df["rolling_race_pace_s"] = pace_df["rolling_3lap_s"]
+            pace_df.loc[two_lap_mask, "rolling_race_pace_s"] = pace_df.loc[
+                two_lap_mask, "rolling_2lap_s"
+            ]
+            pace_df["rolling_window"] = 3
+            pace_df.loc[two_lap_mask, "rolling_window"] = 2
+        else:
+            pace_df["rolling_race_pace_s"] = pace_df["rolling_3lap_s"]
+            pace_df["rolling_window"] = 3
+
         fastest_idx = pace_df["last_lap_time_s"].astype(float).idxmin()
         fastest_lap_row = pace_df.loc[fastest_idx].to_dict()
     else:
@@ -459,6 +480,7 @@ def _build_live_dataframes(events: list[dict[str, Any]]) -> dict[str, Any]:
         "driver_labels": sorted(latest_driver_df["driver_label"].dropna().unique().tolist()) if not latest_driver_df.empty else [],
         "session_meta": session_meta,
         "session_category": session_category,
+        "is_sprint_session": is_sprint_session,
     }
 
 
@@ -507,6 +529,15 @@ def _classify_session(session_meta: dict[str, str]) -> str:
     if any(token in name for token in ("race", "sprint")) and "qualifying" not in name:
         return "race"
     return "practice"
+
+
+def _is_sprint_session(session_meta: dict[str, str]) -> bool:
+    session_name = str(session_meta.get("session_name") or "").lower()
+    if not session_name:
+        return False
+    if "shootout" in session_name or "qualifying" in session_name:
+        return False
+    return "sprint" in session_name
 
 
 class LiveSessionService:

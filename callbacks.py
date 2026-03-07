@@ -419,6 +419,8 @@ def register_callbacks(app):
         Output("live-pace-graph", "figure"),
         Output("live-session-status", "children"),
         Output("live-session-meta", "children"),
+        Output("live-position-table", "data"),
+        Output("live-position-table", "columns"),
         Output("live-session-profile-note", "children"),
         Output("live-source-badge", "children"),
         Output("live-source-badge", "className"),
@@ -439,6 +441,31 @@ def register_callbacks(app):
     def update_live_session_graphs(_, active_tab, selected_live_drivers):
         if active_tab != "live-session-tab":
             raise PreventUpdate
+
+        def _format_gap(value, leader=False):
+            if leader:
+                return "LEADER"
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                return "-"
+            if pd.isna(numeric):
+                return "-"
+            if abs(numeric) < 1e-9:
+                return "0.000"
+            prefix = "+" if numeric > 0 else ""
+            return f"{prefix}{numeric:.3f}"
+
+        def _format_lap_time(value):
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                return "-"
+            if pd.isna(numeric) or numeric <= 0:
+                return "-"
+            minutes = int(numeric // 60)
+            seconds = numeric - (minutes * 60)
+            return f"{minutes}:{seconds:06.3f}"
 
         telemetry_provider.start_live_stream()
         snapshot = telemetry_provider.get_live_snapshot(include_archive_fallback=True)
@@ -474,6 +501,68 @@ def register_callbacks(app):
             }:
                 fastest_lap_row = None
 
+        position_table_columns = [
+            {"name": "Pos", "id": "pos"},
+            {"name": "Driver", "id": "driver"},
+            {"name": "Lap", "id": "lap"},
+            {"name": "Fastest Lap", "id": "fastest_lap"},
+            {"name": "Gap Leader (s)", "id": "gap_to_leader"},
+            {"name": "Gap Ahead (s)", "id": "gap_to_ahead"},
+            {"name": "Pit", "id": "pit_state"},
+        ]
+        position_table_data = []
+        best_lap_by_driver_no: dict[str, float] = {}
+        best_lap_by_driver_label: dict[str, float] = {}
+        if not bestlap_summary_df.empty:
+            for _, best_row in bestlap_summary_df.iterrows():
+                best_value = best_row.get("best_lap_s")
+                if pd.isna(best_value):
+                    best_value = best_row.get("best_clean_lap_s")
+                if pd.isna(best_value):
+                    continue
+                driver_no = str(best_row.get("driver_no") or "").strip()
+                driver_label = str(best_row.get("driver_label") or "").strip()
+                if driver_no:
+                    best_lap_by_driver_no[driver_no] = float(best_value)
+                if driver_label:
+                    best_lap_by_driver_label[driver_label] = float(best_value)
+
+        if not position_df.empty:
+            sort_columns = ["driver_no", "lap_number"]
+            if "seq" in position_df.columns:
+                sort_columns.append("seq")
+            latest_positions = (
+                position_df.sort_values(sort_columns)
+                .drop_duplicates(subset=["driver_no"], keep="last")
+                .sort_values(["position", "driver_label"], kind="mergesort")
+                .reset_index(drop=True)
+            )
+            for _, row in latest_positions.iterrows():
+                driver_no = str(row.get("driver_no") or "").strip()
+                driver_label = str(row.get("driver_label") or "").strip()
+                best_lap_s = best_lap_by_driver_no.get(driver_no)
+                if best_lap_s is None:
+                    best_lap_s = best_lap_by_driver_label.get(driver_label)
+                position_table_data.append(
+                    {
+                        "pos": int(row["position"]),
+                        "driver": str(row.get("driver_label") or row.get("driver_no") or "-"),
+                        "lap": int(row["lap_number"]) if pd.notna(row["lap_number"]) else "-",
+                        "fastest_lap": _format_lap_time(best_lap_s),
+                        "gap_to_leader": _format_gap(
+                            row.get("gap_to_leader_s"),
+                            leader=bool(int(row["position"]) == 1),
+                        ),
+                        "gap_to_ahead": _format_gap(
+                            row.get("gap_to_ahead_s"),
+                            leader=bool(int(row["position"]) == 1),
+                        )
+                        if int(row["position"]) > 1
+                        else "-",
+                        "pit_state": "IN" if bool(row.get("in_pit", False)) else "OUT",
+                    }
+                )
+
         position_fig, gap_fig, pace_fig, profile = build_session_specific_live_figures(
             session_category=snapshot.get("session_category", "practice"),
             position_df=position_df,
@@ -486,6 +575,7 @@ def register_callbacks(app):
             stint_summary_df=stint_summary_df,
             bestlap_summary_df=bestlap_summary_df,
             fastest_lap_row=fastest_lap_row,
+            is_sprint_session=bool(snapshot.get("is_sprint_session", False)),
         )
 
         status = snapshot["status"]
@@ -589,6 +679,8 @@ def register_callbacks(app):
             pace_fig,
             status_items,
             meta_items,
+            position_table_data,
+            position_table_columns,
             profile.get("profile_note", ""),
             badge_text,
             badge_class,

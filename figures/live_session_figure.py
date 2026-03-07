@@ -138,8 +138,36 @@ def _driver_dash_map(df: pd.DataFrame) -> dict[str, str]:
     return dash_map
 
 
-def _session_profile(session_category: str) -> dict[str, Any]:
+def _add_safety_lap_overlays(
+    fig: go.Figure,
+    safety_laps: list[int],
+    row: int | None = None,
+    col: int | None = None,
+) -> None:
+    overlay_kwargs: dict[str, int] = {}
+    if row is not None:
+        overlay_kwargs["row"] = row
+    if col is not None:
+        overlay_kwargs["col"] = col
+
+    for lap in sorted(set(int(l) for l in safety_laps if l is not None)):
+        fig.add_vrect(
+            x0=lap - 0.5,
+            x1=lap + 0.5,
+            fillcolor="rgba(255,176,32,0.14)",
+            line_width=0,
+            layer="below",
+            **overlay_kwargs,
+        )
+
+
+def _session_profile(session_category: str, is_sprint_session: bool = False) -> dict[str, Any]:
     if session_category == "race":
+        pace_subtitle = (
+            "Sprint-adaptive smoothing: 2-lap early, then 3-lap once enough clean laps exist."
+            if is_sprint_session
+            else "Clean laps only (pit laps excluded) with fastest clean lap highlighted."
+        )
         return {
             "profile_note": "Race session detected: focus is positions, race gaps and sustainable race pace.",
             "cards": [
@@ -156,7 +184,7 @@ def _session_profile(session_category: str) -> dict[str, Any]:
                 {
                     "kicker": "Pace",
                     "title": "Rolling 3-Lap Evolution",
-                    "subtitle": "Clean laps only (pit laps excluded) with fastest clean lap highlighted.",
+                    "subtitle": pace_subtitle,
                 },
             ],
         }
@@ -210,10 +238,11 @@ def build_live_race_figures(
     gap_df: pd.DataFrame,
     pace_df: pd.DataFrame,
     fastest_lap_row: dict[str, Any] | None,
+    is_sprint_session: bool = False,
 ) -> tuple[go.Figure, go.Figure, go.Figure]:
     fig1 = _build_race_position_figure(position_df, pit_lap_df, safety_laps)
-    fig2 = _build_race_gap_figure(gap_df)
-    fig3 = _build_race_pace_figure(pace_df, fastest_lap_row)
+    fig2 = _build_race_gap_figure(gap_df, safety_laps)
+    fig3 = _build_race_pace_figure(pace_df, fastest_lap_row, safety_laps, is_sprint_session)
     return fig1, fig2, fig3
 
 
@@ -267,14 +296,7 @@ def _build_race_position_figure(
                 )
             )
 
-    for lap in sorted(set(int(l) for l in safety_laps if l is not None)):
-        fig.add_vrect(
-            x0=lap - 0.5,
-            x1=lap + 0.5,
-            fillcolor="rgba(255,176,32,0.14)",
-            line_width=0,
-            layer="below",
-        )
+    _add_safety_lap_overlays(fig, safety_laps)
 
     max_position = int(position_df["position"].max())
     fig.update_layout(
@@ -296,7 +318,7 @@ def _build_race_position_figure(
     return fig
 
 
-def _build_race_gap_figure(gap_df: pd.DataFrame) -> go.Figure:
+def _build_race_gap_figure(gap_df: pd.DataFrame, safety_laps: list[int]) -> go.Figure:
     if gap_df.empty:
         return _message_figure("Waiting for gap fields (TimeDiffToFastest/PositionAhead).")
 
@@ -354,6 +376,8 @@ def _build_race_gap_figure(gap_df: pd.DataFrame) -> go.Figure:
         margin=dict(l=8, r=8, t=72, b=32),
         **_legend_style(show_legend),
     )
+    _add_safety_lap_overlays(fig, safety_laps, row=1, col=1)
+    _add_safety_lap_overlays(fig, safety_laps, row=1, col=2)
     fig.update_xaxes(row=1, col=1, **_lap_axis())
     fig.update_xaxes(row=1, col=2, **_lap_axis())
     fig.update_yaxes(title_text="Seconds", row=1, col=1, automargin=True)
@@ -364,10 +388,13 @@ def _build_race_gap_figure(gap_df: pd.DataFrame) -> go.Figure:
 def _build_race_pace_figure(
     pace_df: pd.DataFrame,
     fastest_lap_row: dict[str, Any] | None,
+    safety_laps: list[int],
+    is_sprint_session: bool = False,
 ) -> go.Figure:
     if pace_df.empty:
         return _message_figure("Waiting for clean lap-time packets to build pace trend.")
 
+    pace_column = "rolling_race_pace_s" if "rolling_race_pace_s" in pace_df.columns else "rolling_3lap_s"
     driver_count = int(pace_df["driver_label"].nunique())
     show_legend = driver_count <= 8
     dash_map = _driver_dash_map(pace_df)
@@ -375,21 +402,38 @@ def _build_race_pace_figure(
     for driver_label, group in pace_df.groupby("driver_label", sort=True):
         color = _line_color(group)
         sorted_group = group.sort_values("lap_number")
-        hover_lap_times = sorted_group["rolling_3lap_s"].map(_format_lap_time)
+        hover_lap_times = sorted_group[pace_column].map(_format_lap_time)
+        if "rolling_window" in sorted_group.columns:
+            rolling_windows = sorted_group["rolling_window"].fillna(3).astype(int)
+            custom_data = pd.DataFrame(
+                {
+                    "pace_label": hover_lap_times,
+                    "window": rolling_windows,
+                }
+            )
+            hover_template = (
+                "Driver: %{fullData.name}<br>"
+                "Lap: %{x}<br>"
+                "Rolling Pace: %{customdata[0]}<br>"
+                "Window: %{customdata[1]} lap(s)<extra></extra>"
+            )
+        else:
+            custom_data = hover_lap_times
+            hover_template = (
+                "Driver: %{fullData.name}<br>"
+                "Lap: %{x}<br>"
+                "Rolling Pace: %{customdata}<extra></extra>"
+            )
         fig.add_trace(
             go.Scatter(
                 x=sorted_group["lap_number"],
-                y=sorted_group["rolling_3lap_s"],
-                customdata=hover_lap_times,
+                y=sorted_group[pace_column],
+                customdata=custom_data,
                 mode="lines+markers",
                 name=str(driver_label),
                 line=dict(color=color, width=2.2, dash=dash_map.get(str(driver_label), "solid")),
                 marker=dict(size=6),
-                hovertemplate=(
-                    "Driver: %{fullData.name}<br>"
-                    "Lap: %{x}<br>"
-                    "Rolling Pace: %{customdata}<extra></extra>"
-                ),
+                hovertemplate=hover_template,
             )
         )
 
@@ -418,8 +462,18 @@ def _build_race_pace_figure(
         margin=dict(l=8, r=8, t=72, b=32),
         **_legend_style(show_legend),
     )
+    _add_safety_lap_overlays(fig, safety_laps)
     fig.update_xaxes(**_lap_axis())
-    fig.update_yaxes(**_lap_time_axis(pace_df["rolling_3lap_s"]))
+    fig.update_yaxes(
+        **_lap_time_axis(
+            pace_df[pace_column],
+            title=(
+                "Rolling Pace (2->3 lap adaptive)"
+                if is_sprint_session
+                else "Rolling Pace (3-lap)"
+            ),
+        )
+    )
     return fig
 
 
@@ -727,8 +781,9 @@ def build_session_specific_live_figures(
     stint_summary_df: pd.DataFrame,
     bestlap_summary_df: pd.DataFrame,
     fastest_lap_row: dict[str, Any] | None,
+    is_sprint_session: bool = False,
 ) -> tuple[go.Figure, go.Figure, go.Figure, dict[str, Any]]:
-    profile = _session_profile(session_category)
+    profile = _session_profile(session_category, is_sprint_session=is_sprint_session)
 
     if session_category == "race":
         fig1, fig2, fig3 = build_live_race_figures(
@@ -738,6 +793,7 @@ def build_session_specific_live_figures(
             gap_df=gap_df,
             pace_df=pace_df,
             fastest_lap_row=fastest_lap_row,
+            is_sprint_session=is_sprint_session,
         )
     elif session_category == "qualifying":
         fig1, fig2, fig3 = build_live_qualifying_figures(

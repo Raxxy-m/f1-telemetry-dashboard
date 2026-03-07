@@ -473,6 +473,85 @@ def live_session_layout():
             ),
             html.Div(
                 [
+                    section_header(
+                        "Raceboard",
+                        "Current Driver Order",
+                        "Live position snapshot with latest lap and gap context.",
+                    ),
+                    dash_table.DataTable(
+                        id="live-position-table",
+                        data=[],
+                        columns=[],
+                        fixed_rows={"headers": True},
+                        style_as_list_view=True,
+                        style_header={
+                            "backgroundColor": COLORS["surface_2"],
+                            "color": COLORS["text_secondary"],
+                            "border": "none",
+                            "fontWeight": 600,
+                            "fontSize": "11px",
+                            "letterSpacing": "0.08em",
+                            "textTransform": "uppercase",
+                            "textAlign": "left",
+                        },
+                        style_header_conditional=[
+                            {"if": {"column_id": "pos"}, "textAlign": "right"},
+                            {"if": {"column_id": "lap"}, "textAlign": "right"},
+                            {"if": {"column_id": "gap_to_leader"}, "textAlign": "right"},
+                            {"if": {"column_id": "gap_to_ahead"}, "textAlign": "right"},
+                            {"if": {"column_id": "driver"}, "textAlign": "left"},
+                            {"if": {"column_id": "pit_state"}, "textAlign": "left"},
+                            {"if": {"column_id": "fastest_lap"}, "textAlign": "right"},
+                        ],
+                        style_cell={
+                            "backgroundColor": "transparent",
+                            "color": COLORS["text_primary"],
+                            "border": "none",
+                            "padding": "8px 10px",
+                            "fontSize": "12px",
+                            "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                            "fontVariantNumeric": "tabular-nums",
+                            "textAlign": "left",
+                        },
+                        style_data_conditional=[
+                            {
+                                "if": {"column_id": "pos"},
+                                "textAlign": "right",
+                                "fontWeight": 600,
+                            },
+                            {
+                                "if": {"column_id": "lap"},
+                                "textAlign": "right",
+                            },
+                            {
+                                "if": {"column_id": "fastest_lap"},
+                                "textAlign": "right",
+                            },
+                            {
+                                "if": {"column_id": "gap_to_leader"},
+                                "textAlign": "right",
+                            },
+                            {
+                                "if": {"column_id": "gap_to_ahead"},
+                                "textAlign": "right",
+                            },
+                            {
+                                "if": {"column_id": "pit_state", "filter_query": "{pit_state} = \"IN\""},
+                                "color": COLORS["warning_amber"],
+                                "fontWeight": 600,
+                            },
+                        ],
+                        style_table={
+                            "overflowX": "auto",
+                            "overflowY": "auto",
+                            "maxHeight": "290px",
+                        },
+                    ),
+                ],
+                className="section-card",
+            ),
+            html.Div(
+                [
                     html.Div(
                         [
                             html.Div("Live", id="live-card-1-kicker", className="section-kicker"),
