@@ -152,12 +152,13 @@ def build_cumulative_delta_figure(driver_tel_dict, session):
 
     fig = apply_standard_hover_layout(fig)
     fig.update_layout(
-        margin=dict(l=52, r=16, t=38, b=40),
-        height=360,
+        title=dict(text="Time Gap by Distance", x=0.5, xanchor="center"),
+        margin=dict(l=56, r=18, t=72, b=56),
+        height=340,
         legend=dict(orientation="h", y=1.02, x=0),
     )
-    fig.update_xaxes(title_text="Distance (m)")
-    fig.update_yaxes(title_text=f"Delta ({abbr_2} - {abbr_1}) [s]")
+    fig.update_xaxes(title_text="Distance (m)", automargin=True)
+    fig.update_yaxes(title_text=f"Delta ({abbr_2} - {abbr_1}) [s]", automargin=True)
     return fig
 
 
@@ -217,8 +218,9 @@ def build_sector_delta_figure(fastest_laps, session):
 
     fig = apply_standard_hover_layout(fig)
     fig.update_layout(
-        margin=dict(l=86, r=28, t=38, b=34),
-        height=360,
+        title=dict(text="Sector Time Difference", x=0.5, xanchor="center"),
+        margin=dict(l=90, r=30, t=72, b=54),
+        height=320,
         showlegend=False,
     )
     fig.update_xaxes(
@@ -266,10 +268,16 @@ def build_speed_profile_figure(driver_tel_dict, session):
 
     fig = apply_standard_hover_layout(fig)
     fig.update_layout(
+        title=dict(text="Speed Range Distribution", x=0.5, xanchor="center"),
         barmode="overlay",
-        margin=dict(l=52, r=16, t=40, b=46),
-        height=320,
+        margin=dict(l=56, r=18, t=68, b=68),
+        height=360,
     )
-    fig.update_xaxes(title_text="Speed (km/h)")
-    fig.update_yaxes(title_text="Lap Distance Share (%)")
+    fig.update_xaxes(
+        title_text="Speed (km/h)",
+        automargin=True,
+        showticklabels=True,
+        ticks="outside",
+    )
+    fig.update_yaxes(title_text="Lap Distance Share (%)", automargin=True)
     return fig

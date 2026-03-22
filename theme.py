@@ -81,20 +81,25 @@ plotly_f1_dark_template = go.layout.Template(
         ],
         margin=dict(l=42, r=20, t=46, b=38),
         title=dict(
-            x=0.01,
+            x=0.5,
             y=0.97,
-            xanchor="left",
+            xanchor="center",
             yanchor="top",
             font=dict(
-                size=13,
-                color=COLORS["text_secondary"],
+                family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                size=14,
+                color=COLORS["text_primary"],
             ),
         ),
         hovermode="x unified",
         hoverlabel=dict(
             bgcolor=COLORS["surface_1"],
             bordercolor=COLORS["border_subtle"],
-            font=dict(color=COLORS["text_primary"], size=11),
+            font=dict(
+                family="'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace",
+                color=COLORS["text_primary"],
+                size=11,
+            ),
             align="left",
         ),
         legend=dict(
@@ -105,12 +110,17 @@ plotly_f1_dark_template = go.layout.Template(
             x=0,
             bgcolor="rgba(0,0,0,0)",
             borderwidth=0,
-            font=dict(size=11, color=COLORS["text_tertiary"]),
+            font=dict(
+                family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                size=11,
+                color=COLORS["text_tertiary"],
+            ),
             traceorder="normal",
             itemclick="toggleothers",
             itemdoubleclick="toggle",
         ),
         xaxis=dict(
+            automargin=True,
             showline=True,
             linewidth=1,
             linecolor=COLORS["border_subtle"],
@@ -121,10 +131,19 @@ plotly_f1_dark_template = go.layout.Template(
             ticks="outside",
             ticklen=4,
             tickcolor=COLORS["text_tertiary"],
-            tickfont=dict(color=COLORS["text_tertiary"], size=10),
-            title_font=dict(color=COLORS["text_tertiary"], size=11),
+            tickfont=dict(
+                family="'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace",
+                color=COLORS["text_tertiary"],
+                size=10,
+            ),
+            title_font=dict(
+                family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color=COLORS["text_tertiary"],
+                size=11,
+            ),
         ),
         yaxis=dict(
+            automargin=True,
             showline=True,
             linewidth=1,
             linecolor=COLORS["border_subtle"],
@@ -135,8 +154,16 @@ plotly_f1_dark_template = go.layout.Template(
             ticks="outside",
             ticklen=4,
             tickcolor=COLORS["text_tertiary"],
-            tickfont=dict(color=COLORS["text_tertiary"], size=10),
-            title_font=dict(color=COLORS["text_tertiary"], size=11),
+            tickfont=dict(
+                family="'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace",
+                color=COLORS["text_tertiary"],
+                size=10,
+            ),
+            title_font=dict(
+                family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color=COLORS["text_tertiary"],
+                size=11,
+            ),
         ),
     )
 )
@@ -159,4 +186,6 @@ def apply_standard_hover_layout(fig):
         template="plotly_f1_dark_template",
         hovermode="x unified",
     )
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
     return fig

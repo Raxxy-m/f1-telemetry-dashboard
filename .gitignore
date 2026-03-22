@@ -4,6 +4,7 @@
 
 # cache folders
 cache/
+__pycache__/
 
 # data store
 .DS_Store

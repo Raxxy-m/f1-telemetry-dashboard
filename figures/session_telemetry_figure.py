@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from fastf1.plotting import get_driver_style
 
 from theme import COLORS, apply_standard_hover_layout
 
@@ -26,12 +27,22 @@ def _message_figure(message):
     return fig
 
 
+def _driver_color(session, driver, fallback):
+    if session is None or driver is None:
+        return fallback
+    driver_info = session.get_driver(driver)
+    abbr = driver_info["Abbreviation"]
+    style = get_driver_style(abbr, style=["color"], session=session)
+    return style.get("color", fallback)
+
+
 def create_full_session_speed_figure(
     telemetry,
     driver,
     lap_number,
     reference_telemetry=None,
     reference_lap_number=None,
+    session=None,
 ):
     fig = make_subplots(
         rows=4,
@@ -41,7 +52,7 @@ def create_full_session_speed_figure(
         row_heights=[0.42, 0.22, 0.2, 0.16],
     )
 
-    selected_color = COLORS["telemetry_1"]
+    selected_color = _driver_color(session, driver, COLORS["telemetry_1"])
     reference_color = COLORS["telemetry_3"]
 
     fig.add_trace(
@@ -63,7 +74,7 @@ def create_full_session_speed_figure(
                 x=reference_telemetry["Distance"],
                 y=reference_telemetry["Speed"],
                 mode="lines",
-                name=f"Fastest (Lap {reference_lap_number})",
+                name=f"Driver Best (Lap {reference_lap_number})",
                 line=dict(color=reference_color, width=2.0, dash="dash"),
                 hovertemplate="Distance: %{x:.0f} m<br>Speed: %{y:.1f} km/h<extra></extra>",
             ),
@@ -150,7 +161,8 @@ def create_full_session_speed_figure(
 
     fig = apply_standard_hover_layout(fig)
     fig.update_layout(
-        margin=dict(l=52, r=16, t=36, b=35),
+        title=dict(text=f"Lap {lap_number} vs Driver Best ({driver})", x=0.5, xanchor="center"),
+        margin=dict(l=56, r=18, t=72, b=56),
         height=760,
         legend=dict(
             orientation="h",
@@ -165,7 +177,7 @@ def create_full_session_speed_figure(
     fig.update_yaxes(title_text="Throttle (%)", range=[0, 100], row=2, col=1)
     fig.update_yaxes(title_text="Brake (%)", range=[0, 100], row=3, col=1)
     fig.update_yaxes(title_text="Gear", dtick=1, row=4, col=1)
-    fig.update_xaxes(title_text="Distance (m)", row=4, col=1, gridcolor=COLORS["grid"])
+    fig.update_xaxes(title_text="Distance (m)", row=4, col=1, gridcolor=COLORS["grid"], automargin=True)
     fig.update_yaxes(showgrid=False, row=2, col=1)
     fig.update_yaxes(showgrid=False, row=3, col=1)
     fig.update_yaxes(showgrid=False, row=4, col=1)
@@ -178,9 +190,10 @@ def create_lap_delta_to_reference_figure(
     driver,
     lap_number,
     reference_lap_number,
+    session=None,
 ):
     if reference_telemetry is None:
-        return _message_figure("Fastest lap not available for delta comparison.")
+        return _message_figure("Driver best lap is not available for delta comparison.")
 
     max_distance = min(telemetry["Distance"].max(), reference_telemetry["Distance"].max())
     if np.isnan(max_distance) or max_distance <= 0:
@@ -201,16 +214,17 @@ def create_lap_delta_to_reference_figure(
     delta = selected_time - reference_time
 
     fig = go.Figure()
+    selected_color = _driver_color(session, driver, COLORS["telemetry_1"])
     fig.add_trace(
         go.Scatter(
             x=distance_axis,
             y=delta,
             mode="lines",
-            line=dict(color=COLORS["telemetry_1"], width=2.3),
+            line=dict(color=selected_color, width=2.3),
             name=f"Lap {lap_number}",
             hovertemplate=(
                 "Distance: %{x:.0f} m<br>"
-                f"Delta vs Lap {reference_lap_number}: %{{y:+.3f}}s<extra></extra>"
+                f"Delta vs Driver Best (Lap {reference_lap_number}): %{{y:+.3f}}s<extra></extra>"
             ),
         )
     )
@@ -249,9 +263,19 @@ def create_lap_delta_to_reference_figure(
     )
     fig = apply_standard_hover_layout(fig)
     fig.update_layout(
-        margin=dict(l=48, r=16, t=45, b=35),
-        height=360,
+        title=dict(
+            text=f"Delta to Driver Best Lap (Lap {lap_number} vs Lap {reference_lap_number})",
+            x=0.5,
+            xanchor="center",
+        ),
+        margin=dict(l=54, r=18, t=68, b=68),
+        height=400,
     )
-    fig.update_xaxes(title_text="Distance (m)")
-    fig.update_yaxes(title_text="Delta (s)")
+    fig.update_xaxes(
+        title_text="Distance (m)",
+        automargin=True,
+        showticklabels=True,
+        ticks="outside",
+    )
+    fig.update_yaxes(title_text="Delta (s)", automargin=True)
     return fig

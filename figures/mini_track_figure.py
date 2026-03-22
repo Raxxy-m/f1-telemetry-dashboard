@@ -18,7 +18,8 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
             y=tel["Y"],
             mode="lines",
             line=dict(color="#888", width=2),
-            name="Track"
+            name="Track",
+            hoverinfo="skip",
         )
     )
 
@@ -43,14 +44,23 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
                     line=dict(width=1.5, color=COLORS["surface_2"]),
                 ),
                 name=marker_name,
-                hovertemplate=(
-                    f"{marker_name}<br>"
-                    "X: %{x:.0f}<br>"
-                    "Y: %{y:.0f}<extra></extra>"
-                ),
+                hoverinfo="skip",
             )
         )
     
+    x_min = float(tel["X"].min())
+    x_max = float(tel["X"].max())
+    y_min = float(tel["Y"].min())
+    y_max = float(tel["Y"].max())
+
+    span_x = max(x_max - x_min, 1.0)
+    span_y = max(y_max - y_min, 1.0)
+    base_span = max(span_x, span_y)
+    pad = base_span * 0.08
+    half = (base_span / 2.0) + pad
+    cx = (x_min + x_max) / 2.0
+    cy = (y_min + y_max) / 2.0
+
     fig = apply_standard_hover_layout(fig)
 
     fig.update_layout(
@@ -58,19 +68,24 @@ def build_mini_track(driver_tel, driver_styles, reference_distance):
             "text": "Track Position",
             "x": 0.5,
             "xanchor": "center",
-            "y": 0.98,
+            "y": 0.97,
         },
-        showlegend=len(driver_tel) > 1,
-        legend=dict(
-            orientation="h",
-            y=-0.08,
-            x=0.5,
-            xanchor="center",
-            yanchor="top",
+        hovermode=False,
+        showlegend=False,
+        margin=dict(l=8, r=8, t=38, b=8),
+        xaxis=dict(
+            visible=False,
+            range=[cx - half, cx + half],
+            fixedrange=True,
         ),
-        margin=dict(l=10, r=10, t=54, b=36),
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False, scaleanchor="x", scaleratio=1, gridcolor=COLORS['grid']),
+        yaxis=dict(
+            visible=False,
+            range=[cy - half, cy + half],
+            scaleanchor="x",
+            scaleratio=1,
+            gridcolor=COLORS["grid"],
+            fixedrange=True,
+        ),
     )
 
     return fig
