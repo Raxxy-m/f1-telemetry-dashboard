@@ -28,10 +28,10 @@ def build_single_driver_track(tel):
     )
 
     fig.update_layout(
-        title="Track Layout",
+        title=dict(text="Track Layout", x=0.5, xanchor="center"),
         xaxis=dict(visible=False),
         yaxis=dict(visible=False, scaleanchor="x", scaleratio=1),
-        margin=dict(l=10, r=10, t=40, b=10),
+        margin=dict(l=12, r=12, t=66, b=18),
     )
 
     return fig
@@ -117,13 +117,15 @@ def build_binary_delta_track(delta_tel, driver1, driver2, faster_index, session)
 
     fig.update_layout(
         title=dict(
-            text=f"{faster_driver} vs {slower_driver}"
-                 f"<br><sup>Colored by faster driver per segment</sup>",
-            x=0.5
+            text=f"{faster_driver} vs {slower_driver} | Faster by track segment",
+            x=0.5,
+            xanchor="center",
+            y=0.96,
+            yanchor="top",
         ),
         xaxis=dict(visible=False),
         yaxis=dict(visible=False, scaleanchor="x", scaleratio=1),
-        margin=dict(l=10, r=10, t=50, b=10),
+        margin=dict(l=12, r=12, t=72, b=18),
     )
 
     return fig
