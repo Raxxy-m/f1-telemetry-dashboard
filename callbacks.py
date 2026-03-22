@@ -46,6 +46,53 @@ from data_engine import load_session, get_supported_event_schedule, get_live_ses
 
 
 OVERLAY_GRAPH_KEYS = ["speed", "throttle", "brake", "rpm", "gear"]
+TELEMETRY_STORE_COLUMNS = ["Distance", "Speed", "Throttle", "Brake", "RPM", "nGear", "X", "Y"]
+
+
+def _serialize_telemetry_for_store(telemetry_df):
+    payload = {}
+    if telemetry_df is None or telemetry_df.empty:
+        return payload
+
+    precision_by_column = {
+        "Distance": 1,
+        "Speed": 1,
+        "Throttle": 1,
+        "Brake": 1,
+        "RPM": 0,
+        "nGear": 0,
+        "X": 2,
+        "Y": 2,
+    }
+
+    for column in TELEMETRY_STORE_COLUMNS:
+        if column not in telemetry_df.columns:
+            continue
+        values = pd.to_numeric(telemetry_df[column], errors="coerce").to_numpy(dtype=float, copy=False)
+        rounded = np.round(values, precision_by_column[column])
+        payload[column] = [float(val) if np.isfinite(val) else None for val in rounded]
+    return payload
+
+
+def _restore_telemetry_from_store(payload):
+    if not payload:
+        return pd.DataFrame(columns=TELEMETRY_STORE_COLUMNS)
+
+    restored = {}
+    for column in TELEMETRY_STORE_COLUMNS:
+        values = payload.get(column)
+        if values is None:
+            continue
+        restored[column] = pd.to_numeric(pd.Series(values), errors="coerce")
+
+    if not restored:
+        return pd.DataFrame(columns=TELEMETRY_STORE_COLUMNS)
+
+    df = pd.DataFrame(restored)
+    if "Distance" in df.columns:
+        df = df.dropna(subset=["Distance"]).sort_values("Distance", kind="mergesort")
+        df = df[~df["Distance"].duplicated(keep="first")]
+    return df.reset_index(drop=True)
 
 
 def _blank_fig():
@@ -591,7 +638,7 @@ def register_callbacks(app):
         selected_order = stored_data.get("selected_order")
         sector_distances = stored_data.get("sector_distances")
 
-        driver_tel = {drv: pd.DataFrame(data) for drv, data in telemetry_data.items()}
+        driver_tel = {drv: _restore_telemetry_from_store(data) for drv, data in telemetry_data.items()}
         return build_shared_overlay_figure(
             driver_tel_dict=driver_tel,
             driver_styles=driver_styles,
@@ -653,7 +700,7 @@ def register_callbacks(app):
                     {},
                 )
 
-            session = load_session(year, int(gp), int(session_type))
+            session = load_session(year, int(gp), int(session_type), telemetry=True)
             selected_drivers = drivers if isinstance(drivers, list) else [drivers]
 
             debug_lines.append("Session loaded successfully")
@@ -674,7 +721,7 @@ def register_callbacks(app):
             driver_style = extract_driver_styles(session, selected_drivers)
             store_payload = {
                 "telemetry": {
-                    drv: tel.to_dict("records")
+                    drv: _serialize_telemetry_for_store(tel)
                     for drv, tel in driver_tel.items()
                 },
                 "styles": driver_style,
@@ -808,7 +855,7 @@ def register_callbacks(app):
 
         telemetry_data = stored_data["telemetry"]
         driver_styles = stored_data["styles"]
-        driver_tel = {drv: pd.DataFrame(data) for drv, data in telemetry_data.items()}
+        driver_tel = {drv: _restore_telemetry_from_store(data) for drv, data in telemetry_data.items()}
 
         reference_distance = None
         if hoverData and "points" in hoverData:
@@ -926,7 +973,7 @@ def register_callbacks(app):
                 [html.Span("Awaiting session + driver selection.", className="lap-context-item")],
             )
         driver = lap_driver
-        session = load_session(year, int(gp), int(session_name))
+        session = load_session(year, int(gp), int(session_name), telemetry=True)
         laps = prepare_session_laps(
             session=session,
             driver_code=driver,

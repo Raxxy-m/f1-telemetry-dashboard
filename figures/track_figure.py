@@ -1,5 +1,5 @@
+import numpy as np
 import plotly.graph_objects as go
-from fastf1.plotting import get_driver_style
 
 from theme import COLORS
 
@@ -12,6 +12,36 @@ def adjust_color_brightness(hex_color, factor=0.8):
     b = int(max(0, min(255, b * factor)))
 
     return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _driver_color(session, driver, fallback):
+    if session is None or driver is None:
+        return fallback
+    info = session.get_driver(driver)
+    color = str(info.get("TeamColor", "")).strip()
+    if not color:
+        return fallback
+    return color if color.startswith("#") else f"#{color}"
+
+
+def _segment_points(x_vals, y_vals, segment_mask):
+    if len(x_vals) < 2:
+        return [], []
+
+    seg_x = []
+    seg_y = []
+    for idx in range(len(x_vals) - 1):
+        if not segment_mask[idx]:
+            continue
+        x0 = x_vals[idx]
+        y0 = y_vals[idx]
+        x1 = x_vals[idx + 1]
+        y1 = y_vals[idx + 1]
+        if not (np.isfinite(x0) and np.isfinite(y0) and np.isfinite(x1) and np.isfinite(y1)):
+            continue
+        seg_x.extend([x0, x1, None])
+        seg_y.extend([y0, y1, None])
+    return seg_x, seg_y
 
 
 def build_single_driver_track(tel):
@@ -39,12 +69,12 @@ def build_single_driver_track(tel):
 
 def build_binary_delta_track(delta_tel, driver1, driver2, faster_index, session):
     fig = go.Figure()
+    required_columns = {"X", "Y", "Delta"}
+    if delta_tel is None or delta_tel.empty or not required_columns.issubset(set(delta_tel.columns)):
+        return build_multi_driver_message()
 
-    driver1_abbr = session.get_driver(driver1)['Abbreviation']
-    driver2_abbr = session.get_driver(driver2)['Abbreviation']
-
-    color1 = get_driver_style(driver1_abbr, style=['color'], session=session)['color']
-    color2 = get_driver_style(driver2_abbr, style=['color'], session=session)['color']
+    color1 = _driver_color(session, driver1, COLORS["telemetry_1"])
+    color2 = _driver_color(session, driver2, COLORS["telemetry_2"])
 
     # Handle teammates
     if color1 == color2:
@@ -74,23 +104,47 @@ def build_binary_delta_track(delta_tel, driver1, driver2, faster_index, session)
         )
     )
 
-    # Binary colored segments
-    for i in range(len(delta_tel) - 1):
+    x_values = np.asarray(delta_tel["X"], dtype=float)
+    y_values = np.asarray(delta_tel["Y"], dtype=float)
+    delta_values = np.asarray(delta_tel["Delta"], dtype=float)
 
-        if delta_tel["Delta"].iloc[i] > 0:
-            # Positive delta means comparator lap is slower than reference lap.
-            segment_color = faster_color
-        else:
-            segment_color = slower_color
+    fast_mask = np.zeros(len(delta_values), dtype=bool)
+    slow_mask = np.zeros(len(delta_values), dtype=bool)
+    if len(delta_values) > 1:
+        segment_valid = (
+            np.isfinite(x_values[:-1])
+            & np.isfinite(y_values[:-1])
+            & np.isfinite(x_values[1:])
+            & np.isfinite(y_values[1:])
+            & np.isfinite(delta_values[:-1])
+        )
+        fast_mask[:-1] = segment_valid & (delta_values[:-1] > 0)
+        slow_mask[:-1] = segment_valid & (delta_values[:-1] <= 0)
 
+    fast_x, fast_y = _segment_points(x_values, y_values, fast_mask)
+    slow_x, slow_y = _segment_points(x_values, y_values, slow_mask)
+
+    if fast_x:
         fig.add_trace(
             go.Scatter(
-                x=[delta_tel["X"].iloc[i], delta_tel["X"].iloc[i+1]],
-                y=[delta_tel["Y"].iloc[i], delta_tel["Y"].iloc[i+1]],
+                x=fast_x,
+                y=fast_y,
                 mode="lines",
-                line=dict(width=5, color=segment_color),
+                line=dict(width=5, color=faster_color),
                 showlegend=False,
-                hoverinfo="skip"
+                hoverinfo="skip",
+            )
+        )
+
+    if slow_x:
+        fig.add_trace(
+            go.Scatter(
+                x=slow_x,
+                y=slow_y,
+                mode="lines",
+                line=dict(width=5, color=slower_color),
+                showlegend=False,
+                hoverinfo="skip",
             )
         )
 

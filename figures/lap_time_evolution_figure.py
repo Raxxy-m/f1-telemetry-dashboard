@@ -1,5 +1,4 @@
 import plotly.graph_objects as go
-from fastf1.plotting import get_driver_style
 import numpy as np
 
 from theme import COLORS, apply_standard_hover_layout
@@ -33,6 +32,16 @@ def _message_figure(message):
     return fig
 
 
+def _driver_color(session, driver, fallback):
+    if session is None or driver is None:
+        return fallback
+    info = session.get_driver(driver)
+    color = str(info.get("TeamColor", "")).strip()
+    if not color:
+        return fallback
+    return color if color.startswith("#") else f"#{color}"
+
+
 def create_lap_time_evolution_figure(driver_payloads, session):
     if not driver_payloads:
         return _message_figure("No lap data available for the selected driver(s).")
@@ -53,7 +62,7 @@ def create_lap_time_evolution_figure(driver_payloads, session):
 
         info = session.get_driver(driver)
         abbr = info["Abbreviation"]
-        color = get_driver_style(abbr, style=["color"], session=session)["color"]
+        color = _driver_color(session, driver, COLORS["telemetry_2"])
 
         plot_df = df.sort_values("LapNumber").copy()
         valid_df = plot_df[plot_df["IsValid"]].copy()

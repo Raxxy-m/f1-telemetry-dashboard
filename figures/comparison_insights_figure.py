@@ -1,6 +1,5 @@
 import numpy as np
 import plotly.graph_objects as go
-from fastf1.plotting import get_driver_style
 import pandas as pd
 
 from theme import COLORS, apply_standard_hover_layout
@@ -30,8 +29,12 @@ def _message_figure(message):
 def _driver_meta(session, driver):
     driver_info = session.get_driver(driver)
     abbr = driver_info["Abbreviation"]
-    style = get_driver_style(abbr, style=["color"], session=session)
-    return abbr, style["color"]
+    color = str(driver_info.get("TeamColor", "")).strip()
+    if not color:
+        color = COLORS["telemetry_2"]
+    if not color.startswith("#"):
+        color = f"#{color}"
+    return abbr, color
 
 
 def _safe_seconds(value):
@@ -50,7 +53,7 @@ def build_cumulative_delta_figure(driver_tel_dict, session):
     if np.isnan(max_distance) or max_distance <= 0:
         return _message_figure("Telemetry distance data unavailable for delta calculation.")
 
-    distance_axis = np.linspace(0, max_distance, 1400)
+    distance_axis = np.linspace(0, max_distance, 950)
     t1 = np.interp(
         distance_axis,
         tel_1["Distance"],

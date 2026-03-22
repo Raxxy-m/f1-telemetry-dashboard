@@ -247,7 +247,7 @@ def build_shared_overlay_figure(
                 trace_kwargs["fill"] = "tozeroy"
                 trace_kwargs["opacity"] = 0.18 if len(ordered_drivers) > 1 else 0.24
 
-            fig.add_trace(go.Scatter(**trace_kwargs), row=row_idx, col=1)
+            fig.add_trace(go.Scattergl(**trace_kwargs), row=row_idx, col=1)
 
         fig.update_yaxes(title_text=graph_meta["y_label"], row=row_idx, col=1)
         if "range" in graph_meta:

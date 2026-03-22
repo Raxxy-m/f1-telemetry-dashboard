@@ -1,4 +1,19 @@
+import os
+
 import pandas as pd
+
+from services.telemetry_service import extract_lap_telemetry
+
+
+def _env_positive_int(name, default):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+    return value if value > 0 else default
+
+
+MAX_LAP_POINTS = _env_positive_int("F1D_LAP_POINTS", 1400)
 
 
 def prepare_session_laps(session, driver_code, segment="ALL", valid_only=True, longest_stint=False):
@@ -73,8 +88,7 @@ def get_lap_telemetry(lap):
     """
     Returns telemetry for a lap with distance added.
     """
-    telemetry = lap.get_telemetry().add_distance()
-    return telemetry
+    return extract_lap_telemetry(lap, max_points=MAX_LAP_POINTS)
 
 def safe_lap_selection(laps_df, lap_number):
     """

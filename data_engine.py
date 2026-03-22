@@ -1,10 +1,14 @@
-import fastf1 
 import os
-from fastf1 import Cache
-import pandas as pd
+from collections import OrderedDict
+from datetime import datetime, timedelta, timezone
 from numbers import Integral
 from threading import RLock
-from datetime import datetime, timedelta, timezone
+
+import fastf1
+import pandas as pd
+from fastf1 import Cache
+
+from services.telemetry_service import prepare_telemetry
 
 CACHE_DIR = 'cache'
 
@@ -21,14 +25,48 @@ SUPPORTED_EVENT_FORMATS = {
     "testing",
 }
 
-_SESSION_CACHE = {}
+_SESSION_CACHE = OrderedDict()
 _SESSION_CACHE_LOCK = RLock()
+_EVENT_SCHEDULE_CACHE = OrderedDict()
+
+
+def _env_positive_int(name, default):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+    return value if value > 0 else default
+
+
+MAX_SESSION_CACHE_ENTRIES = _env_positive_int("F1D_SESSION_CACHE_SIZE", 1)
+MAX_SCHEDULE_CACHE_ENTRIES = _env_positive_int("F1D_SCHEDULE_CACHE_SIZE", 2)
+
+
+def _cache_set(cache_obj, key, value, max_entries):
+    cache_obj[key] = value
+    if isinstance(cache_obj, OrderedDict):
+        cache_obj.move_to_end(key)
+
+    while len(cache_obj) > max_entries:
+        cache_obj.popitem(last=False)
 
 
 def get_supported_event_schedule(year: int):
+    year = int(year)
+
+    with _SESSION_CACHE_LOCK:
+        cached_schedule = _EVENT_SCHEDULE_CACHE.get(year)
+        if cached_schedule is not None:
+            _EVENT_SCHEDULE_CACHE.move_to_end(year)
+            return cached_schedule
+
     schedule = fastf1.get_event_schedule(year, include_testing=True)
-    schedule = schedule[schedule["EventFormat"].isin(SUPPORTED_EVENT_FORMATS)]
-    return schedule.reset_index(drop=True)
+    schedule = schedule[schedule["EventFormat"].isin(SUPPORTED_EVENT_FORMATS)].reset_index(drop=True)
+
+    with _SESSION_CACHE_LOCK:
+        _cache_set(_EVENT_SCHEDULE_CACHE, year, schedule, MAX_SCHEDULE_CACHE_ENTRIES)
+
+    return schedule
 
 
 def _resolve_event_from_index(year: int, event_index: int):
@@ -136,6 +174,7 @@ def load_session(year: int, gp, session_type, telemetry=True):
     with _SESSION_CACHE_LOCK:
         cached = _SESSION_CACHE.get(key)
         if cached is not None:
+            _SESSION_CACHE.move_to_end(key)
             has_telemetry = bool(getattr(cached, "_f1d_has_telemetry", False))
             if not telemetry or has_telemetry:
                 return cached
@@ -147,11 +186,12 @@ def load_session(year: int, gp, session_type, telemetry=True):
     with _SESSION_CACHE_LOCK:
         existing = _SESSION_CACHE.get(key)
         if existing is not None:
+            _SESSION_CACHE.move_to_end(key)
             existing_has_telemetry = bool(getattr(existing, "_f1d_has_telemetry", False))
             if existing_has_telemetry or not telemetry:
                 return existing
 
-        _SESSION_CACHE[key] = session
+        _cache_set(_SESSION_CACHE, key, session, MAX_SESSION_CACHE_ENTRIES)
         return session
 
 #Telemetry extraction
@@ -167,14 +207,8 @@ def get_driver_telemetry(session, driver: str):
     lap = session.laps.pick_driver(driver).pick_fastest()
     if lap is None or lap.empty:
         return pd.DataFrame(columns=["Distance", "Speed", "Throttle", "Brake", "nGear", "X", "Y"])
-    tel1 = lap.get_telemetry()
-
-    tel = tel1.add_distance()
-
-    return tel1[[
-        "Distance", "Speed", "Throttle",
-        "Brake", "nGear", "X", "Y"
-    ]]
+    telemetry = prepare_telemetry(lap)
+    return telemetry.loc[:, [col for col in ["Distance", "Speed", "Throttle", "Brake", "nGear", "X", "Y"] if col in telemetry.columns]]
 
 
 #fastest lap comparison

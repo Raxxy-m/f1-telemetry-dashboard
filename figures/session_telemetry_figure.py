@@ -1,7 +1,6 @@
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from fastf1.plotting import get_driver_style
 
 from theme import COLORS, apply_standard_hover_layout
 
@@ -31,9 +30,18 @@ def _driver_color(session, driver, fallback):
     if session is None or driver is None:
         return fallback
     driver_info = session.get_driver(driver)
-    abbr = driver_info["Abbreviation"]
-    style = get_driver_style(abbr, style=["color"], session=session)
-    return style.get("color", fallback)
+    color = str(driver_info.get("TeamColor", "")).strip()
+    if not color:
+        return fallback
+    return color if color.startswith("#") else f"#{color}"
+
+
+def _to_brake_percent(values):
+    brake_values = np.asarray(values, dtype=float)
+    finite_values = brake_values[np.isfinite(brake_values)]
+    if finite_values.size > 0 and float(finite_values.max()) <= 1.5:
+        brake_values = brake_values * 100.0
+    return brake_values
 
 
 def create_full_session_speed_figure(
@@ -97,7 +105,7 @@ def create_full_session_speed_figure(
     fig.add_trace(
         go.Scatter(
             x=telemetry["Distance"],
-            y=telemetry["Brake"].astype(int) * 100,
+            y=_to_brake_percent(telemetry["Brake"]),
             mode="lines",
             fill="tozeroy",
             line=dict(color=selected_color, shape="hv", width=1.2),
@@ -137,7 +145,7 @@ def create_full_session_speed_figure(
         fig.add_trace(
             go.Scatter(
                 x=reference_telemetry["Distance"],
-                y=reference_telemetry["Brake"].astype(int) * 100,
+                y=_to_brake_percent(reference_telemetry["Brake"]),
                 mode="lines",
                 line=dict(color=reference_color, width=1.2, dash="dash", shape="hv"),
                 showlegend=False,
@@ -199,7 +207,7 @@ def create_lap_delta_to_reference_figure(
     if np.isnan(max_distance) or max_distance <= 0:
         return _message_figure("Insufficient telemetry for lap delta calculation.")
 
-    distance_axis = np.linspace(0, max_distance, 1200)
+    distance_axis = np.linspace(0, max_distance, 900)
     selected_time = np.interp(
         distance_axis,
         telemetry["Distance"],
