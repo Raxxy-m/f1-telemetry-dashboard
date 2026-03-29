@@ -59,8 +59,8 @@ def create_layout():
                         [
                             html.Div(
                                 [
-                                    html.Div("F1 Telemetry Platform", className="app-badge"),
-                                    html.H1("Race Engineering Dashboard", className="dashboard-title"),
+                                    html.Div("F1 Telemetry Data Platform", className="app-badge"),
+                                    html.H1("Formula 1 Engineering Dashboard", className="dashboard-title"),
                                     html.P(
                                         "High-density telemetry, delta analysis and session pace intelligence.",
                                         className="dashboard-subtitle",
@@ -81,7 +81,7 @@ def create_layout():
                                 [
                                     html.Div(
                                         [
-                                            html.Div("Session Archive", className="live-banner-kicker"),
+                                            html.Div("Session Info", className="live-banner-kicker"),
                                             html.Div(
                                                 "Select season, event and session",
                                                 id="archive-session-title",
@@ -196,7 +196,7 @@ def create_layout():
                                 [
                                     section_header(
                                         "Race Intel",
-                                        "Comparison Snapshot",
+                                        "Delta Comparison Snapshot",
                                         "Quick look at who was faster and where.",
                                     ),
                                     html.Div(
@@ -221,8 +221,8 @@ def create_layout():
                             html.Div(
                                 [
                                     section_header(
-                                        "Telemetry",
-                                        "Driver Overlay Analysis",
+                                        "Race Intel",
+                                        "Driver Fastest Lap Analysis",
                                         "Compare speed, throttle, brake, RPM and gear by distance. Hover to reveal mini-map context.",
                                     ),
                                     html.Div(
@@ -395,7 +395,7 @@ def create_layout():
                                     html.Div(
                                         [
                                             section_header(
-                                                "Session Breakdown",
+                                                "Race Intel",
                                                 "Sector Delta",
                                                 "Per-sector benchmark between selected drivers.",
                                             ),
@@ -411,9 +411,9 @@ def create_layout():
                                     html.Div(
                                         [
                                             section_header(
-                                                "Summary",
-                                                "Fastest Lap Table",
-                                                "Compact benchmark table for selected drivers.",
+                                                "Race Intel",
+                                                "Fastest Laptime Comparison",
+                                                "Compact laptime benchmark table for selected drivers.",
                                             ),
                                             dash_table.DataTable(
                                                 id="fastest-lap-table",
