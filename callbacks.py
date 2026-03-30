@@ -42,7 +42,7 @@ from figures.comparison_insights_figure import (
     build_speed_profile_figure,
 )
 
-from data_engine import load_session, get_supported_event_schedule, get_live_session_snapshot
+from data_engine import load_session, get_supported_event_schedule
 
 
 OVERLAY_GRAPH_KEYS = ["speed", "throttle", "brake", "rpm", "gear"]
@@ -393,75 +393,32 @@ def register_callbacks(app):
     @app.callback(
         Output("archive-session-title", "children"),
         Output("archive-view-context", "children"),
-        Output("live-session-detail", "children"),
-        Output("live-banner-action", "children"),
-        Output("live-banner-action", "disabled"),
-        Output("live-banner-action", "className"),
-        Output("live-session-store", "data"),
         Input("year-dd", "value"),
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
     )
     def update_archive_context(year, gp, session_type):
-        live_snapshot = get_live_session_snapshot()
-        
-        def live_ui(snapshot):
-            if snapshot.get("live"):
-                start_utc = str(snapshot.get("session_start_utc", "")).replace("T", " ").replace("+00:00", " UTC")
-                return (
-                    f"LIVE NOW: {snapshot['year']} / {snapshot['event_name']} / {snapshot['session_name']} "
-                    f"(Start: {start_utc})",
-                    f"View Live: {snapshot['event_name']} {snapshot['session_name']}",
-                    False,
-                    "live-banner-action",
-                )
-            return (
-                "No live session right now. Archival view is active.",
-                "Archive Mode",
-                True,
-                "live-banner-action live-banner-action--disabled",
-            )
-
         if year is None:
-            live_detail, live_button_text, live_button_disabled, live_button_class = live_ui(live_snapshot)
-
             return (
                 "Select season, event and session",
                 "Viewing: -- / -- / --",
-                live_detail,
-                live_button_text,
-                live_button_disabled,
-                live_button_class,
-                live_snapshot,
             )
 
         if gp is None:
             title = "Select an event"
             context = f"Viewing: {year} / -- / --"
-            live_detail, live_button_text, live_button_disabled, live_button_class = live_ui(live_snapshot)
 
             return (
                 title,
                 context,
-                live_detail,
-                live_button_text,
-                live_button_disabled,
-                live_button_class,
-                live_snapshot,
             )
 
         schedule = get_supported_event_schedule(year)
         gp_idx = int(gp)
         if gp_idx < 0 or gp_idx >= len(schedule):
-            live_detail, live_button_text, live_button_disabled, live_button_class = live_ui(live_snapshot)
             return (
                 "Select an event",
                 f"Viewing: {year} / -- / --",
-                live_detail,
-                live_button_text,
-                live_button_disabled,
-                live_button_class,
-                live_snapshot,
             )
 
         event_row = schedule.iloc[gp_idx]
@@ -479,16 +436,9 @@ def register_callbacks(app):
             title = f"{event_name} - {session_label}"
             context = f"Viewing: {year} / {event_name} / {session_label}"
 
-        live_detail, live_button_text, live_button_disabled, live_button_class = live_ui(live_snapshot)
-
         return (
             title,
             context,
-            live_detail,
-            live_button_text,
-            live_button_disabled,
-            live_button_class,
-            live_snapshot,
         )
 
     @app.callback(
