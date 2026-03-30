@@ -4,7 +4,6 @@ from fastf1 import Cache
 import pandas as pd
 from numbers import Integral
 from threading import RLock
-from datetime import datetime, timedelta, timezone
 
 CACHE_DIR = 'cache'
 
@@ -61,63 +60,6 @@ def _build_session(year: int, gp, session_type):
         return fastf1.get_session(year, round_number, session_number)
 
     return fastf1.get_session(year, gp, session_type)
-
-
-def get_live_session_snapshot(now_utc=None):
-    """
-    Return currently-live session metadata if a session appears live now.
-    Uses schedule UTC timestamps with an approximate 4-hour live window.
-    """
-
-    now = now_utc or datetime.now(timezone.utc)
-    year = int(now.year)
-
-    try:
-        schedule = get_supported_event_schedule(year)
-    except Exception:
-        return {"live": False}
-
-    live_window = timedelta(hours=4)
-
-    for gp_index, event in schedule.iterrows():
-        event_name = str(event.get("EventName", "Unknown Event"))
-
-        for session_number in range(1, 6):
-            name_col = f"Session{session_number}"
-            date_col = f"Session{session_number}DateUtc"
-
-            if name_col not in event.index or date_col not in event.index:
-                continue
-
-            session_name = event.get(name_col)
-            session_start = event.get(date_col)
-
-            if pd.isna(session_name) or pd.isna(session_start):
-                continue
-
-            if isinstance(session_start, pd.Timestamp):
-                if session_start.tzinfo is None:
-                    session_start = session_start.tz_localize("UTC")
-                session_start = session_start.to_pydatetime()
-            elif isinstance(session_start, datetime):
-                if session_start.tzinfo is None:
-                    session_start = session_start.replace(tzinfo=timezone.utc)
-            else:
-                continue
-
-            session_end = session_start + live_window
-            if session_start <= now <= session_end:
-                return {
-                    "live": True,
-                    "year": year,
-                    "gp_index": int(gp_index),
-                    "event_name": event_name,
-                    "session_number": int(session_number),
-                    "session_name": str(session_name),
-                    "session_start_utc": session_start.isoformat(),
-                }
-
-    return {"live": False}
 
 
 #session loader

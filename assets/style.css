@@ -126,7 +126,7 @@ body {
     margin-top: var(--space-5);
 }
 
-.live-banner {
+.archive-banner {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -138,7 +138,7 @@ body {
     box-shadow: 0 10px 28px rgba(95, 9, 1, 0.45);
 }
 
-.live-banner-kicker {
+.archive-banner-kicker {
     font-family: "Inter", sans-serif;
     font-size: 12px;
     letter-spacing: 0.12em;
@@ -147,7 +147,7 @@ body {
     color: #ffe7e4;
 }
 
-.live-banner-title {
+.archive-banner-title {
     margin-top: 2px;
     font-family: "Inter", sans-serif;
     font-size: 24px;
@@ -155,7 +155,7 @@ body {
     color: #fff;
 }
 
-.live-banner-action {
+.archive-banner-action {
     padding: 9px 16px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.85);
@@ -167,20 +167,13 @@ body {
     cursor: pointer;
 }
 
-.live-banner-action:disabled,
-.live-banner-action--disabled {
+.archive-banner-action:disabled,
+.archive-banner-action--disabled {
     border-color: rgba(255, 255, 255, 0.28);
     background: rgba(255, 255, 255, 0.16);
     color: #f2f5fb;
     cursor: not-allowed;
     opacity: 0.82;
-}
-
-.live-session-detail {
-    margin: var(--space-3) 2px 0;
-    color: var(--color-text-tertiary);
-    font-size: 13px;
-    font-weight: 500;
 }
 
 .archive-view-context {
@@ -865,12 +858,12 @@ body {
         font-size: 2.1rem;
     }
 
-    .live-banner {
+    .archive-banner {
         flex-direction: column;
         align-items: flex-start;
     }
 
-    .live-banner-title {
+    .archive-banner-title {
         font-size: 21px;
     }
 

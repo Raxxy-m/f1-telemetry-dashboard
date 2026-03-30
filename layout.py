@@ -66,7 +66,7 @@ def create_layout():
                                         className="dashboard-subtitle",
                                     ),
                                     html.P(
-                                        "Season, event and session filters update all visual layers in real time.",
+                                        "Season, event and session filters update all visual layers for archive analysis.",
                                         className="toolbar-meta",
                                     ),
                                 ],
@@ -81,30 +81,25 @@ def create_layout():
                                 [
                                     html.Div(
                                         [
-                                            html.Div("Session Info", className="live-banner-kicker"),
+                                            html.Div("Archive Info", className="archive-banner-kicker"),
                                             html.Div(
                                                 "Select season, event and session",
                                                 id="archive-session-title",
-                                                className="live-banner-title",
+                                                className="archive-banner-title",
                                             ),
                                         ],
-                                        className="live-banner-left",
+                                        className="archive-banner-left",
                                     ),
                                     html.Button(
-                                        "Archive Mode",
-                                        id="live-banner-action",
-                                        className="live-banner-action live-banner-action--disabled",
+                                        "Live App",
+                                        id="archive-banner-action",
+                                        className="archive-banner-action archive-banner-action--disabled",
                                         type="button",
                                         disabled=True,
                                         n_clicks=0,
                                     ),
                                 ],
-                                className="live-banner",
-                            ),
-                            html.Div(
-                                "No live session right now. Archival view is active.",
-                                id="live-session-detail",
-                                className="live-session-detail",
+                                className="archive-banner",
                             ),
                             html.Div(
                                 "Viewing: -- / -- / --",
@@ -478,7 +473,6 @@ def create_layout():
                                 id="overlay-toggle-store",
                                 data=["speed", "throttle", "brake", "rpm", "gear"],
                             ),
-                            dcc.Store(id="live-session-store"),
                         ],
                         className="archive-view",
                     ),

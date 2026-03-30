@@ -2,8 +2,7 @@
 
 An interactive Formula 1 telemetry analysis dashboard built using **FastF1**, **Dash**, and **Plotly**.
 
-This project explores driver performance comparison, lap consistency, and telemetry-based delta analysis using real F1 session data.
-(Historical F1 data so far, working on realtime data pipelines...)
+This project explores driver performance comparison, lap consistency, and telemetry-based delta analysis using archived F1 session data.
 
 The app supports both race weekends and testing events with dynamic event/session handling.
 
