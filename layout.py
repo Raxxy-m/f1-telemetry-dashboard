@@ -59,14 +59,14 @@ def create_layout():
                         [
                             html.Div(
                                 [
-                                    html.Div("F1 Telemetry Platform", className="app-badge"),
-                                    html.H1("Race Engineering Dashboard", className="dashboard-title"),
+                                    html.Div("F1 Telemetry Data Platform", className="app-badge"),
+                                    html.H1("Formula 1 Engineering Dashboard", className="dashboard-title"),
                                     html.P(
                                         "High-density telemetry, delta analysis and session pace intelligence.",
                                         className="dashboard-subtitle",
                                     ),
                                     html.P(
-                                        "Season, event and session filters update all visual layers in real time.",
+                                        "Season, event and session filters update all visual layers for archive analysis.",
                                         className="toolbar-meta",
                                     ),
                                 ],
@@ -81,30 +81,25 @@ def create_layout():
                                 [
                                     html.Div(
                                         [
-                                            html.Div("Session Archive", className="live-banner-kicker"),
+                                            html.Div("Archive Info", className="archive-banner-kicker"),
                                             html.Div(
                                                 "Select season, event and session",
                                                 id="archive-session-title",
-                                                className="live-banner-title",
+                                                className="archive-banner-title",
                                             ),
                                         ],
-                                        className="live-banner-left",
+                                        className="archive-banner-left",
                                     ),
                                     html.Button(
-                                        "Archive Mode",
-                                        id="live-banner-action",
-                                        className="live-banner-action live-banner-action--disabled",
+                                        "Live App",
+                                        id="archive-banner-action",
+                                        className="archive-banner-action archive-banner-action--disabled",
                                         type="button",
                                         disabled=True,
                                         n_clicks=0,
                                     ),
                                 ],
-                                className="live-banner",
-                            ),
-                            html.Div(
-                                "No live session right now. Archival view is active.",
-                                id="live-session-detail",
-                                className="live-session-detail",
+                                className="archive-banner",
                             ),
                             html.Div(
                                 "Viewing: -- / -- / --",
@@ -196,7 +191,7 @@ def create_layout():
                                 [
                                     section_header(
                                         "Race Intel",
-                                        "Comparison Snapshot",
+                                        "Delta Comparison Snapshot",
                                         "Quick look at who was faster and where.",
                                     ),
                                     html.Div(
@@ -221,8 +216,8 @@ def create_layout():
                             html.Div(
                                 [
                                     section_header(
-                                        "Telemetry",
-                                        "Driver Overlay Analysis",
+                                        "Race Intel",
+                                        "Driver Fastest Lap Analysis",
                                         "Compare speed, throttle, brake, RPM and gear by distance. Hover to reveal mini-map context.",
                                     ),
                                     html.Div(
@@ -395,7 +390,7 @@ def create_layout():
                                     html.Div(
                                         [
                                             section_header(
-                                                "Session Breakdown",
+                                                "Race Intel",
                                                 "Sector Delta",
                                                 "Per-sector benchmark between selected drivers.",
                                             ),
@@ -411,9 +406,9 @@ def create_layout():
                                     html.Div(
                                         [
                                             section_header(
-                                                "Summary",
-                                                "Fastest Lap Table",
-                                                "Compact benchmark table for selected drivers.",
+                                                "Race Intel",
+                                                "Fastest Laptime Comparison",
+                                                "Compact laptime benchmark table for selected drivers.",
                                             ),
                                             dash_table.DataTable(
                                                 id="fastest-lap-table",
@@ -478,7 +473,6 @@ def create_layout():
                                 id="overlay-toggle-store",
                                 data=["speed", "throttle", "brake", "rpm", "gear"],
                             ),
-                            dcc.Store(id="live-session-store"),
                         ],
                         className="archive-view",
                     ),
