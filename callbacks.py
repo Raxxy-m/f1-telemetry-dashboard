@@ -41,11 +41,21 @@ from figures.comparison_insights_figure import (
     build_sector_delta_figure,
     build_speed_profile_figure,
 )
+from figures.session_profile_figure import (
+    build_tyre_degradation_figure,
+    build_stint_pace_figure,
+    build_corner_loss_figure,
+    build_minisector_delta_figure,
+)
 
 from data_engine import load_session, get_supported_event_schedule
 
 
 OVERLAY_GRAPH_KEYS = ["speed", "throttle", "brake", "rpm", "gear"]
+SESSION_PROFILE_UNKNOWN = "unknown"
+SESSION_PROFILE_PRACTICE = "practice"
+SESSION_PROFILE_QUALIFYING = "qualifying"
+SESSION_PROFILE_RACE = "race"
 
 
 def _blank_fig():
@@ -182,6 +192,128 @@ def _fastest_lap_table_styles(table_rows, session):
     return styles
 
 
+def _resolve_session_label(year, gp, session_type):
+    if year is None or gp is None or session_type is None:
+        return ""
+
+    try:
+        schedule = get_supported_event_schedule(year)
+        gp_idx = int(gp)
+        if gp_idx < 0 or gp_idx >= len(schedule):
+            return ""
+
+        event_row = schedule.iloc[gp_idx]
+        session_label = event_row.get(f"Session{int(session_type)}", "")
+        if pd.isna(session_label):
+            return ""
+        return str(session_label)
+    except Exception:
+        return ""
+
+
+def _infer_session_profile(session_label):
+    label = str(session_label or "").strip().lower()
+    if not label:
+        return SESSION_PROFILE_UNKNOWN
+
+    qualifying_tokens = ("qualifying", "shootout", "q1", "q2", "q3")
+    race_tokens = ("race", "sprint")
+    practice_tokens = ("practice", "test", "training", "fp1", "fp2", "fp3")
+
+    if any(token in label for token in qualifying_tokens):
+        return SESSION_PROFILE_QUALIFYING
+    if any(token in label for token in race_tokens):
+        return SESSION_PROFILE_RACE
+    if any(token in label for token in practice_tokens):
+        return SESSION_PROFILE_PRACTICE
+    return SESSION_PROFILE_UNKNOWN
+
+
+def _session_focus_message(profile):
+    if profile == SESSION_PROFILE_QUALIFYING:
+        return (
+            "Session focus: Qualifying view prioritizes sector/track-segment pace signals."
+        )
+    if profile == SESSION_PROFILE_RACE:
+        return (
+            "Session focus: Race view emphasizes stint progression and lap-time trend context."
+        )
+    if profile == SESSION_PROFILE_PRACTICE:
+        return (
+            "Session focus: Practice view emphasizes trend-building and setup/tyre pace behavior."
+        )
+    return "Session focus: select a session to tailor dashboard priority."
+
+
+def _session_header_content(profile):
+    race_defaults = (
+        "Race Results",
+        "Race Classification",
+        "Finishing order, delta to winner and best lap.",
+        "Race Intel",
+        "Delta Comparison Snapshot",
+        "Quick look at who was faster and where.",
+        "Race Intel",
+        "Driver Fastest Lap Analysis",
+        "Compare speed, throttle, brake, RPM and gear by distance. Hover to reveal mini-map context.",
+        "Session Analysis",
+        "Lap Telemetry Drilldown",
+        "Inspect one lap and compare it with that driver's best lap in this session.",
+        "Race Intel",
+        "Sector Delta",
+        "Per-sector benchmark between selected drivers.",
+        "Race Intel",
+        "Fastest Laptime Comparison",
+        "Compact laptime benchmark table for selected drivers.",
+    )
+
+    if profile == SESSION_PROFILE_QUALIFYING:
+        return (
+            "Qualifying Intel",
+            "Session Classification",
+            "Classification is hidden in qualifying view. Focus is on peak-lap extraction.",
+            "Qualifying Intel",
+            "Qualifying Delta Snapshot",
+            "Two-driver reference view for fastest-lap and sector split differences.",
+            "Qualifying Intel",
+            "Peak Lap Telemetry Analysis",
+            "Overlay fastest laps to isolate entry, apex and exit behavior.",
+            "Qualifying Drilldown",
+            "Single-Lap Drilldown",
+            "Inspect one lap against driver best to identify one-lap execution losses.",
+            "Qualifying Intel",
+            "Mini-Sector Delta",
+            "Distance-binned delta built from fastest laps.",
+            "Qualifying Intel",
+            "Fastest Laptime Comparison",
+            "Reference table for fastest lap and sector times.",
+        )
+
+    if profile == SESSION_PROFILE_PRACTICE:
+        return (
+            "Practice Intel",
+            "Session Classification",
+            "Classification is hidden in practice view. Focus is on pace trend and run behavior.",
+            "Practice Intel",
+            "Practice Pace Snapshot",
+            "Quick comparison of fastest laps and pace spread for selected drivers.",
+            "Practice Intel",
+            "Reference Lap Telemetry Analysis",
+            "Overlay reference laps to compare setup impact across core telemetry channels.",
+            "Practice Drilldown",
+            "Lap Telemetry Drilldown",
+            "Inspect one lap and compare against driver best to pinpoint losses.",
+            "Practice Intel",
+            "Stint Pace Summary",
+            "Average pace per stint with lap-count and degradation trend context.",
+            "Practice Intel",
+            "Fastest Laptime Comparison",
+            "Compact reference table for selected drivers.",
+        )
+
+    return race_defaults
+
+
 def _race_results_table_styles(table_rows):
     styles = [
         {"if": {"column_id": "POS"}, "textAlign": "right"},
@@ -286,6 +418,90 @@ def _build_race_results_table(session):
 
 
 def register_callbacks(app):
+    @app.callback(
+        Output("session-profile-store", "data"),
+        Output("session-focus-note", "children"),
+        Input("year-dd", "value"),
+        Input("gp-dd", "value"),
+        Input("session-dd", "value"),
+    )
+    def update_session_profile(year, gp, session_type):
+        session_label = _resolve_session_label(year, gp, session_type)
+        profile = _infer_session_profile(session_label)
+        return (
+            {"profile": profile, "session_label": session_label},
+            _session_focus_message(profile),
+        )
+
+    @app.callback(
+        Output("race-results-section", "style"),
+        Output("speed-profile-shell", "style"),
+        Output("telemetry-secondary-grid", "style"),
+        Output("lap-time-evolution-shell", "style"),
+        Output("session-bottom-grid", "style"),
+        Input("session-profile-store", "data"),
+    )
+    def apply_session_view_profile(profile_data):
+        profile = str((profile_data or {}).get("profile") or SESSION_PROFILE_UNKNOWN)
+
+        race_results_style = {}
+        speed_profile_style = {}
+        telemetry_secondary_grid_style = {}
+        lap_time_evolution_style = {}
+        session_bottom_grid_style = {}
+
+        if profile == SESSION_PROFILE_QUALIFYING:
+            race_results_style = {"display": "none"}
+            speed_profile_style = {"display": "none"}
+            telemetry_secondary_grid_style = {"gridTemplateColumns": "1fr"}
+            lap_time_evolution_style = {}
+            session_bottom_grid_style = {}
+        elif profile == SESSION_PROFILE_RACE:
+            race_results_style = {}
+            speed_profile_style = {}
+            telemetry_secondary_grid_style = {}
+            lap_time_evolution_style = {}
+            session_bottom_grid_style = {}
+        elif profile == SESSION_PROFILE_PRACTICE:
+            race_results_style = {"display": "none"}
+            speed_profile_style = {}
+            telemetry_secondary_grid_style = {}
+            lap_time_evolution_style = {}
+            session_bottom_grid_style = {}
+
+        return (
+            race_results_style,
+            speed_profile_style,
+            telemetry_secondary_grid_style,
+            lap_time_evolution_style,
+            session_bottom_grid_style,
+        )
+
+    @app.callback(
+        Output("race-results-kicker", "children"),
+        Output("race-results-title", "children"),
+        Output("race-results-subtitle", "children"),
+        Output("comparison-kicker", "children"),
+        Output("comparison-title", "children"),
+        Output("comparison-subtitle", "children"),
+        Output("overlay-kicker", "children"),
+        Output("overlay-title", "children"),
+        Output("overlay-subtitle", "children"),
+        Output("drilldown-kicker", "children"),
+        Output("drilldown-title", "children"),
+        Output("drilldown-subtitle", "children"),
+        Output("secondary-insight-kicker", "children"),
+        Output("secondary-insight-title", "children"),
+        Output("secondary-insight-subtitle", "children"),
+        Output("benchmark-kicker", "children"),
+        Output("benchmark-title", "children"),
+        Output("benchmark-subtitle", "children"),
+        Input("session-profile-store", "data"),
+    )
+    def update_section_headers(profile_data):
+        profile = str((profile_data or {}).get("profile") or SESSION_PROFILE_UNKNOWN)
+        return _session_header_content(profile)
+
     @app.callback(
         Output("gp-dd", "options"),
         Output("gp-dd", "value"),
@@ -571,9 +787,10 @@ def register_callbacks(app):
         Input("gp-dd", "value"),
         Input("session-dd", "value"),
         Input("drivers-dd", "value"),
+        Input("session-profile-store", "data"),
         prevent_initial_call=True,
     )
-    def update_dashboard(year, gp, session_type, drivers):
+    def update_dashboard(year, gp, session_type, drivers, session_profile_data):
         debug_lines = []
         try:
             debug_lines.append("=== INPUTS ===")
@@ -581,6 +798,8 @@ def register_callbacks(app):
             debug_lines.append(f"GP: {gp}")
             debug_lines.append(f"Session: {session_type}")
             debug_lines.append(f"Drivers: {drivers}")
+            session_profile = str((session_profile_data or {}).get("profile") or SESSION_PROFILE_UNKNOWN)
+            debug_lines.append(f"Session profile: {session_profile}")
             debug_lines.append("")
 
             if year is None or gp is None or session_type is None or not drivers:
@@ -654,8 +873,19 @@ def register_callbacks(app):
             overlay_kpis = _overlay_kpi_cards(session, driver_tel, selected_drivers)
 
             delta_fig = build_cumulative_delta_figure(driver_tel, session)
-            sector_fig = build_sector_delta_figure(fastest_laps, session)
-            speed_profile_fig = build_speed_profile_figure(driver_tel, session)
+            if session_profile == SESSION_PROFILE_QUALIFYING:
+                sector_fig = build_minisector_delta_figure(
+                    driver_tel,
+                    session,
+                    fastest_laps=fastest_laps,
+                )
+                speed_profile_fig = build_corner_loss_figure(driver_tel, session)
+            elif session_profile in {SESSION_PROFILE_PRACTICE, SESSION_PROFILE_RACE}:
+                sector_fig = build_stint_pace_figure(session, selected_drivers)
+                speed_profile_fig = build_tyre_degradation_figure(session, selected_drivers)
+            else:
+                sector_fig = build_sector_delta_figure(fastest_laps, session)
+                speed_profile_fig = build_speed_profile_figure(driver_tel, session)
             kpi_cards = _render_kpi_cards(
                 compute_comparison_kpi_rows(session, fastest_laps, driver_tel)
             )
@@ -1001,9 +1231,14 @@ def register_callbacks(app):
         session = load_session(year, int(gp), int(session_name), telemetry=False)
         payloads = []
         for driver in drivers:
-            laps = session.laps.pick_drivers(driver)
+            laps = prepare_session_laps(
+                session=session,
+                driver_code=driver,
+                valid_only=True,
+            )
             if laps.empty:
                 continue
+
             df, fastest_idx = get_lap_time_evolution_data(laps)
             payloads.append(
                 {

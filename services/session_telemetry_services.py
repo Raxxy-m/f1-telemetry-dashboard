@@ -1,6 +1,38 @@
 import pandas as pd
 
 
+def _session_part_label(value):
+    if pd.isna(value):
+        return "-"
+
+    raw = str(value).strip()
+    if not raw:
+        return "-"
+
+    upper = raw.upper()
+    known = {
+        "Q1", "Q2", "Q3",
+        "SQ1", "SQ2", "SQ3",
+    }
+    alias_map = {"S1": "SQ1", "S2": "SQ2", "S3": "SQ3"}
+    if upper in alias_map:
+        return alias_map[upper]
+    if upper in known:
+        return upper
+
+    try:
+        num = int(float(raw))
+        numeric_map = {
+            0: "Q1",
+            1: "Q2",
+            2: "Q3",
+            3: "Q3",
+        }
+        return numeric_map.get(num, raw)
+    except Exception:
+        return raw
+
+
 def prepare_session_laps(session, driver_code, segment="ALL", valid_only=True, longest_stint=False):
     """
     Master function to prepare laps based on filters.
@@ -49,13 +81,17 @@ def filter_session_segment(laps_df, segment):
     segment: 'ALL', 'Q1', 'Q2', 'Q3'
     """
 
-    if segment == "ALL":
+    if str(segment).upper() == "ALL":
         return laps_df
     
     if 'SessionPart' not in laps_df.columns:
-        return laps_df
-    
-    return laps_df[laps_df['SessionPart'] == segment]
+        return laps_df.iloc[0:0]
+
+    target = str(segment).upper()
+    labeled = laps_df.copy()
+    labeled["_SessionPartLabel"] = labeled["SessionPart"].apply(_session_part_label)
+    filtered = labeled[labeled["_SessionPartLabel"] == target]
+    return filtered.drop(columns=["_SessionPartLabel"])
 
 def get_longest_stint(laps_df):
     """
@@ -104,11 +140,21 @@ def get_lap_time_evolution_data(laps_df):
     )
 
     # Add the valid flag
-    df['IsValid'] = (
+    is_valid = (
         df['LapTime'].notna() &
         df['PitInTime'].isna() &
         df['PitOutTime'].isna()
     )
+    if "Deleted" in df.columns:
+        is_valid = is_valid & (df["Deleted"] != True)
+    if "IsAccurate" in df.columns:
+        is_valid = is_valid & (df["IsAccurate"] == True)
+    df['IsValid'] = is_valid
+
+    if "SessionPart" in df.columns:
+        df["SessionPartLabel"] = df["SessionPart"].apply(_session_part_label)
+    else:
+        df["SessionPartLabel"] = "-"
 
     # Fastest lap index
     fastest_idx = df['LapTimeSeconds'].idxmin()

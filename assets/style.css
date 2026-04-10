@@ -183,6 +183,17 @@ body {
     font-weight: 500;
 }
 
+.session-focus-note {
+    margin: 0 2px var(--space-3);
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 24, 1, 0.24);
+    background: rgba(255, 24, 1, 0.08);
+    color: #ffd8d3;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
 .control-bar {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1.6fr;

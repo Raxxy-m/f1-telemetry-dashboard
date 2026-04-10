@@ -11,13 +11,20 @@ GRAPH_CONFIG = {
 }
 
 
-def section_header(kicker, title, subtitle=None):
+def section_header(
+    kicker,
+    title,
+    subtitle=None,
+    kicker_id=None,
+    title_id=None,
+    subtitle_id=None,
+):
     children = [
-        html.Div(kicker, className="section-kicker"),
-        html.H2(title, className="section-heading"),
+        html.Div(kicker, id=kicker_id, className="section-kicker"),
+        html.H2(title, id=title_id, className="section-heading"),
     ]
     if subtitle:
-        children.append(html.P(subtitle, className="section-subtitle"))
+        children.append(html.P(subtitle, id=subtitle_id, className="section-subtitle"))
     return html.Div(children, className="section-header")
 
 
@@ -107,6 +114,11 @@ def create_layout():
                                 className="archive-view-context",
                             ),
                             html.Div(
+                                "Session focus: select a session to tailor dashboard priority.",
+                                id="session-focus-note",
+                                className="session-focus-note",
+                            ),
+                            html.Div(
                                 [
                                     control_field(
                                         "Season",
@@ -145,6 +157,9 @@ def create_layout():
                                         "Race Results",
                                         "Race Classification",
                                         "Finishing order, delta to winner and best lap.",
+                                        kicker_id="race-results-kicker",
+                                        title_id="race-results-title",
+                                        subtitle_id="race-results-subtitle",
                                     ),
                                     dash_table.DataTable(
                                         id="race-results-table",
@@ -185,6 +200,7 @@ def create_layout():
                                     ),
                                     html.Div(id="race-results-note", className="fastest-lap-note"),
                                 ],
+                                id="race-results-section",
                                 className="section-card",
                             ),
                             html.Div(
@@ -193,6 +209,9 @@ def create_layout():
                                         "Race Intel",
                                         "Delta Comparison Snapshot",
                                         "Quick look at who was faster and where.",
+                                        kicker_id="comparison-kicker",
+                                        title_id="comparison-title",
+                                        subtitle_id="comparison-subtitle",
                                     ),
                                     html.Div(
                                         id="comparison-kpi-cards",
@@ -211,6 +230,7 @@ def create_layout():
                                         style={"height": "340px"},
                                     ),
                                 ],
+                                id="comparison-snapshot-section",
                                 className="section-card",
                             ),
                             html.Div(
@@ -219,6 +239,9 @@ def create_layout():
                                         "Race Intel",
                                         "Driver Fastest Lap Analysis",
                                         "Compare speed, throttle, brake, RPM and gear by distance. Hover to reveal mini-map context.",
+                                        kicker_id="overlay-kicker",
+                                        title_id="overlay-title",
+                                        subtitle_id="overlay-subtitle",
                                     ),
                                     html.Div(
                                         [
@@ -309,13 +332,19 @@ def create_layout():
                                                 config=GRAPH_CONFIG,
                                                 style={"height": "360px"},
                                             ),
-                                            dcc.Graph(
-                                                id="speed-profile-graph",
-                                                className="chart-surface",
-                                                config=GRAPH_CONFIG,
-                                                style={"height": "360px"},
+                                            html.Div(
+                                                [
+                                                    dcc.Graph(
+                                                        id="speed-profile-graph",
+                                                        className="chart-surface",
+                                                        config=GRAPH_CONFIG,
+                                                        style={"height": "360px"},
+                                                    ),
+                                                ],
+                                                id="speed-profile-shell",
                                             ),
                                         ],
+                                        id="telemetry-secondary-grid",
                                         className="telemetry-secondary-grid",
                                     ),
                                 ],
@@ -327,6 +356,9 @@ def create_layout():
                                         "Session Analysis",
                                         "Lap Telemetry Drilldown",
                                         "Inspect one lap and compare it with that driver's best lap in this session.",
+                                        kicker_id="drilldown-kicker",
+                                        title_id="drilldown-title",
+                                        subtitle_id="drilldown-subtitle",
                                     ),
                                     html.Div(
                                         [
@@ -367,19 +399,30 @@ def create_layout():
                                     ),
                                     html.Div(
                                         [
-                                            dcc.Graph(
-                                                id="lap-delta-fastest-graph",
-                                                className="chart-surface",
-                                                config=GRAPH_CONFIG,
-                                                style={"height": "400px"},
+                                            html.Div(
+                                                [
+                                                    dcc.Graph(
+                                                        id="lap-delta-fastest-graph",
+                                                        className="chart-surface",
+                                                        config=GRAPH_CONFIG,
+                                                        style={"height": "400px"},
+                                                    ),
+                                                ],
+                                                id="lap-delta-shell",
                                             ),
-                                            dcc.Graph(
-                                                id="lap-time-evolution-graph",
-                                                className="chart-surface",
-                                                config=GRAPH_CONFIG,
-                                                style={"height": "400px"},
+                                            html.Div(
+                                                [
+                                                    dcc.Graph(
+                                                        id="lap-time-evolution-graph",
+                                                        className="chart-surface",
+                                                        config=GRAPH_CONFIG,
+                                                        style={"height": "400px"},
+                                                    ),
+                                                ],
+                                                id="lap-time-evolution-shell",
                                             ),
                                         ],
+                                        id="session-bottom-grid",
                                         className="session-bottom-grid",
                                     ),
                                 ],
@@ -393,6 +436,9 @@ def create_layout():
                                                 "Race Intel",
                                                 "Sector Delta",
                                                 "Per-sector benchmark between selected drivers.",
+                                                kicker_id="secondary-insight-kicker",
+                                                title_id="secondary-insight-title",
+                                                subtitle_id="secondary-insight-subtitle",
                                             ),
                                             dcc.Graph(
                                                 id="sector-delta-bars",
@@ -401,6 +447,7 @@ def create_layout():
                                                 style={"height": "300px"},
                                             ),
                                         ],
+                                        id="sector-delta-section",
                                         className="section-card",
                                     ),
                                     html.Div(
@@ -409,6 +456,9 @@ def create_layout():
                                                 "Race Intel",
                                                 "Fastest Laptime Comparison",
                                                 "Compact laptime benchmark table for selected drivers.",
+                                                kicker_id="benchmark-kicker",
+                                                title_id="benchmark-title",
+                                                subtitle_id="benchmark-subtitle",
                                             ),
                                             dash_table.DataTable(
                                                 id="fastest-lap-table",
@@ -461,14 +511,17 @@ def create_layout():
                                             ),
                                             html.Div(id="fastest-lap-note", className="fastest-lap-note"),
                                         ],
+                                        id="fastest-lap-table-section",
                                         className="section-card",
                                     ),
                                 ],
+                                id="summary-grid",
                                 className="summary-grid",
                             ),
                             html.Pre(id="debug-output", className="debug-output"),
                             dcc.Store(id="telemetry-store"),
                             dcc.Store(id="lap-driver-store"),
+                            dcc.Store(id="session-profile-store", data={"profile": "unknown", "session_label": ""}),
                             dcc.Store(
                                 id="overlay-toggle-store",
                                 data=["speed", "throttle", "brake", "rpm", "gear"],
